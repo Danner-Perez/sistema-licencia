@@ -2,61 +2,62 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">✏️ Editar Postulante</h3>
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <h4 class="mb-4 fw-bold">✏️ Editar Postulante</h4>
 
-    <form action="{{ route('postulantes.update', $postulante->id) }}" method="POST">
+    <form method="POST" action="{{ route('postulantes.update', $postulante) }}">
         @csrf
         @method('PUT')
 
         <div class="mb-3">
             <label class="form-label">DNI</label>
-            <input type="text" name="dni" class="form-control"
-                   value="{{ old('dni', $postulante->dni) }}" maxlength="8" required>
+            <input type="text" name="dni"
+                   value="{{ old('dni', $postulante->dni) }}"
+                   class="form-control" required>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Nombres</label>
-            <input type="text" name="nombres" class="form-control"
-                   value="{{ old('nombres', $postulante->nombres) }}" required>
+            <input type="text" name="nombres"
+                   value="{{ old('nombres', $postulante->nombres) }}"
+                   class="form-control" required>
         </div>
 
         <div class="mb-3">
             <label class="form-label">Apellidos</label>
-            <input type="text" name="apellidos" class="form-control"
-                   value="{{ old('apellidos', $postulante->apellidos) }}" required>
+            <input type="text" name="apellidos"
+                   value="{{ old('apellidos', $postulante->apellidos) }}"
+                   class="form-control" required>
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Tipo de Licencia</label>
-            <select name="tipo_licencia" class="form-control" required>
-                <option value="">Seleccione</option>
-                <option value="A1" {{ $postulante->tipo_licencia == 'A1' ? 'selected' : '' }}>A1</option>
-                <option value="A2A" {{ $postulante->tipo_licencia == 'A2A' ? 'selected' : '' }}>A2A</option>
-                <option value="A2B" {{ $postulante->tipo_licencia == 'A2B' ? 'selected' : '' }}>A2B</option>
-                <option value="A3A" {{ $postulante->tipo_licencia == 'A3A' ? 'selected' : '' }}>A3A</option>
+            <label class="form-label">Tipo Licencia</label>
+            <select name="tipo_licencia" class="form-select">
+                @foreach(['A1','A2A','A2B','A3'] as $lic)
+                    <option value="{{ $lic }}"
+                        @selected($postulante->tipo_licencia === $lic)>
+                        {{ $lic }}
+                    </option>
+                @endforeach
             </select>
         </div>
-
         <div class="mb-3">
-            <label class="form-label">Fecha de Examen</label>
-            <input type="date" name="fecha_examen" class="form-control"
-                   value="{{ old('fecha_examen', $postulante->fecha_examen) }}" required>
+            <label class="form-label">Fecha Psicofísico</label>
+            <input type="date"
+                name="fecha_psicofisico"
+                value="{{ old('fecha_psicofisico', $postulante->fecha_psicofisico) }}"
+                class="form-control">
         </div>
 
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary">💾 Actualizar</button>
-            <a href="{{ route('postulantes.index') }}" class="btn btn-secondary">↩ Volver</a>
-        </div>
+
+        <button class="btn btn-primary">
+            💾 Actualizar
+        </button>
+
+        <a href="{{ route('postulantes.index') }}" class="btn btn-secondary">
+            ⬅️ Volver
+        </a>
+
     </form>
 </div>
 @endsection
