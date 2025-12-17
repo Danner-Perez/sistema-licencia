@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Models;
-use Carbon\Carbon;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Postulante extends Model
 {
@@ -13,60 +13,62 @@ class Postulante extends Model
         'dni',
         'nombres',
         'apellidos',
-        'tipo_licencia',
-        'fecha_registro',
-        'fecha_psicofisico', // ✅ NUEVO
+        'fecha_psicosomatico',
         'validado_reniec',
-        'registrado_por'
+        'registrado_por',
     ];
 
+    protected $casts = [
+        'fecha_psicosomatico' => 'date',
+        'validado_reniec'     => 'boolean',
+    ];
 
-    public function asistencias() {
-        return $this->hasMany(Asistencia::class, 'id_postulante');
+    /* ==============================
+       RELACIONES
+    ================================ */
+
+    public function procesosLicencia()
+    {
+        return $this->hasMany(
+            ProcesoLicencia::class,
+            'postulante_id',
+            'id_postulante'
+        );
     }
 
-    public function verificacion() {
-        return $this->hasOne(Verificacion::class, 'id_postulante');
+    public function procesoActivo()
+    {
+        return $this->hasOne(
+            ProcesoLicencia::class,
+            'postulante_id',
+            'id_postulante'
+        )->where('estado', 'EN_PROCESO');
     }
 
-    public function examen() {
-        return $this->hasOne(Examen::class, 'id_postulante');
-    }
-    public function getFechaVencimientoPsicofisicoAttribute()
-{
-    if (!$this->fecha_psicofisico) {
-        return null;
-    }
+    /* ==============================
+       PSICOSOMÁTICO (REGLA DE NEGOCIO)
+    ================================ */
 
-    return Carbon::parse($this->fecha_psicofisico)->addDays(60);
-}
-
-public function getDiasRestantesPsicofisicoAttribute()
-{
-    if (!$this->fecha_psicofisico) {
-        return null;
+    public function fechaVencimientoPsicosomatico()
+    {
+        return $this->fecha_psicosomatico->copy()->addMonths(6);
     }
 
-    return now()->diffInDays($this->fecha_vencimiento_psicofisico, false);
-}
-
-public function getEstadoPsicofisicoAttribute()
-{
-    if (!$this->fecha_psicofisico) {
-        return 'SIN REGISTRO';
+    public function psicosomaticoVigente(): bool
+    {
+        return now()->lte($this->fechaVencimientoPsicosomatico());
     }
 
-    $dias = $this->dias_restantes_psicofisico;
-
-    if ($dias < 0) {
-        return 'VENCIDO';
+    public function diasRestantesPsicosomatico(): int
+    {
+        return now()->diffInDays(
+            $this->fechaVencimientoPsicosomatico(),
+            false
+        );
     }
-
-    if ($dias <= 7) {
-        return 'POR VENCER';
+    public function getProcesoActivoAttribute()
+    {
+        return $this->procesosLicencia()->where('estado', 'EN_PROCESO')->first();
     }
-
-    return 'VIGENTE';
-}
-
+    
 }

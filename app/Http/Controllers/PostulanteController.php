@@ -3,21 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Postulante;
+use App\Models\ProcesoLicencia;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class PostulanteController extends Controller
 {
     /**
-     * Mostrar listado de postulantes
+     * Listar postulantes registrados hoy
      */
-    public function index()
+    public function index(Request $request)
     {
-        $postulantes = Postulante::orderBy('created_at', 'desc')->get();
+        $fecha = $request->get('fecha', now()->toDateString());
+
+        $postulantes = Postulante::whereDate('created_at', $fecha)
+            ->with('procesosLicencia')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('postulantes.index', compact('postulantes'));
     }
 
     /**
-     * Mostrar formulario de creación
+     * Formulario para crear nuevo postulante
      */
     public function create()
     {
@@ -25,35 +33,42 @@ class PostulanteController extends Controller
     }
 
     /**
-     * Guardar nuevo postulante
+     * Guardar nuevo postulante y proceso de licencia automáticamente
      */
     public function store(Request $request)
     {
         $request->validate([
-            'dni' => 'required|digits:8|unique:postulantes,dni',
-            'nombres' => 'required|string|max:100',
-            'apellidos' => 'required|string|max:100',
-            'tipo_licencia' => 'required|string|max:10',
-            'fecha_psicofisico' => 'nullable|date',
+            'dni'                => 'required|digits:8|unique:postulantes,dni',
+            'nombres'            => 'required|string|max:100',
+            'apellidos'          => 'required|string|max:100',
+            'fecha_psicosomatico'=> 'required|date',
+            'tipo_licencia'      => 'required|in:A1,A2A,A2B,A3',
         ]);
 
-        Postulante::create([
-            'dni' => $request->dni,
-            'nombres' => $request->nombres,
-            'apellidos' => $request->apellidos,
+        // Crear postulante
+        $postulante = Postulante::create([
+            'dni'                => $request->dni,
+            'nombres'            => $request->nombres,
+            'apellidos'          => $request->apellidos,
+            'fecha_psicosomatico'=> $request->fecha_psicosomatico,
+            'registrado_por'     => auth()->id(),
+        ]);
+
+        // Crear proceso de licencia
+        ProcesoLicencia::create([
+            'postulante_id' => $postulante->id_postulante,
             'tipo_licencia' => $request->tipo_licencia,
-            'fecha_registro' => now(),
-            'fecha_psicofisico' => $request->fecha_psicofisico,
-            'registrado_por' => auth()->id(),
+            'fecha_inicio'  => Carbon::today(),
+            'estado'        => 'EN_PROCESO',
         ]);
 
         return redirect()
             ->route('postulantes.index')
-            ->with('success', 'Postulante registrado correctamente');
+            ->with('success', 'Postulante y proceso de licencia registrados correctamente');
     }
 
     /**
-     * Mostrar formulario de edición
+     * Formulario para editar postulante
      */
     public function edit(Postulante $postulante)
     {
@@ -61,26 +76,32 @@ class PostulanteController extends Controller
     }
 
     /**
-     * Actualizar postulante
+     * Actualizar datos del postulante y proceso activo
      */
     public function update(Request $request, Postulante $postulante)
     {
         $request->validate([
-            'dni' => 'required|digits:8|unique:postulantes,dni,' 
-                . $postulante->id_postulante . ',id_postulante',
-            'nombres' => 'required|string|max:100',
-            'apellidos' => 'required|string|max:100',
-            'tipo_licencia' => 'required|string|max:10',
-            'fecha_psicofisico' => 'nullable|date',
+            'nombres'             => 'required|string|max:100',
+            'apellidos'           => 'required|string|max:100',
+            'fecha_psicosomatico' => 'required|date',
+            'validado_reniec'     => 'required|boolean',
+            'tipo_licencia'       => 'nullable|in:A1,A2A,A2B,A3',
         ]);
 
+        // Actualizar datos del postulante
         $postulante->update([
-            'dni' => $request->dni,
-            'nombres' => $request->nombres,
-            'apellidos' => $request->apellidos,
-            'tipo_licencia' => $request->tipo_licencia,
-            'fecha_psicofisico' => $request->fecha_psicofisico,
+            'nombres'             => $request->nombres,
+            'apellidos'           => $request->apellidos,
+            'fecha_psicosomatico' => $request->fecha_psicosomatico,
+            'validado_reniec'     => $request->validado_reniec,
         ]);
+
+        // Actualizar tipo de licencia del proceso activo
+        if ($request->filled('tipo_licencia') && $postulante->procesoActivo) {
+            $postulante->procesoActivo->update([
+                'tipo_licencia' => $request->tipo_licencia,
+            ]);
+        }
 
         return redirect()
             ->route('postulantes.index')

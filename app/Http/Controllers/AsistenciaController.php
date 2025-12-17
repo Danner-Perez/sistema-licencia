@@ -3,39 +3,63 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
 use App\Models\Postulante;
 use App\Models\Asistencia;
 use Carbon\Carbon;
 
 class AsistenciaController extends Controller
 {
-    public function index()
+    // Mostrar listado de postulantes y asistencias del día
+    public function index(Request $request)
     {
-        $asistencias = Asistencia::with('postulante')
-            ->orderBy('created_at','desc')
+        $hoy = Carbon::today();
+        $dni = $request->input('dni');
+
+        $postulantes = Postulante::when($dni, function ($query, $dni) {
+                $query->where('dni', 'like', "%{$dni}%");
+            })
+            ->orderBy('fecha_registro', 'asc')
             ->get();
 
-        return view('asistencias.marcar', compact('asistencias'));
+        $asistenciasHoy = Asistencia::whereDate('fecha', $hoy)
+            ->pluck('postulante_id')
+            ->toArray();
+
+        return view('asistencias.marcar', compact('postulantes', 'asistenciasHoy'));
     }
 
-    public function store(Request $request)
+    // Registrar asistencia vía AJAX
+    public function marcarAjax(Request $request)
     {
-        $postulante = Postulante::where('dni', $request->dni)->first();
-
-        if (!$postulante) {
-            return back()->with('error','DNI no registrado');
-        }
-
-        if (Asistencia::where('postulante_id', $postulante->id)->exists()) {
-            return back()->with('error','Asistencia ya registrada');
-        }
-
-        Asistencia::create([
-            'postulante_id' => $postulante->id,
-            'hora_llegada' => Carbon::now()
+        $request->validate([
+            'postulante_id' => 'required|exists:postulantes,id_postulante',
         ]);
 
-        return back()->with('success','Asistencia registrada');
+        $postulanteId = $request->postulante_id;
+        $hoy = Carbon::today();
+
+        $asistenciaHoy = Asistencia::where('postulante_id', $postulanteId)
+            ->whereDate('fecha', $hoy)
+            ->first();
+
+        if ($asistenciaHoy) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Asistencia ya registrada'
+            ], 422);
+        }
+
+        $asistencia = Asistencia::create([
+            'postulante_id' => $postulanteId,
+            'hora_llegada' => Carbon::now(),
+            'fecha' => $hoy,
+            'registrado_por' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Asistencia registrada',
+            'hora_llegada' => $asistencia->hora_llegada
+        ]);
     }
 }

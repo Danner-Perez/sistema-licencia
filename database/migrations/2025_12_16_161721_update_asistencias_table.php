@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -12,25 +11,15 @@ return new class extends Migration
         Schema::create('asistencias', function (Blueprint $table) {
             $table->id('id_asistencia');
 
-            // Relación con postulante
             $table->unsignedBigInteger('postulante_id');
-
-            // Fecha de asistencia, por defecto hoy
-            $table->date('fecha')->default(DB::raw('CURRENT_DATE'));
-
-            // Hora de llegada y salida
+            $table->date('fecha'); // SIN default
             $table->time('hora_llegada');
             $table->time('hora_salida')->nullable();
-
-            // Observaciones
             $table->string('observacion')->nullable();
-
-            // Usuario que registra la asistencia
             $table->unsignedBigInteger('registrado_por');
 
             $table->timestamps();
 
-            // Foreign keys
             $table->foreign('postulante_id')
                   ->references('id_postulante')
                   ->on('postulantes')

@@ -29,23 +29,27 @@
                         </a>
                     </li>
 
+                    
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('examenes.index') }}">
-                            Exámenes
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link {{ request()->is('asistencias*') ? 'active' : '' }}" 
+                        href="{{ route('asistencias.index') }}">
                             Asistencia
                         </a>
                     </li>
+
 
                     <li class="nav-item">
                         <a class="nav-link" href="#">
                             Verificación
                         </a>
                     </li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('examenes.index') }}">
+                            Exámenes
+                        </a>
+                    </li>
+
 
                 {{-- EXAMINADOR --}}
                 @elseif(auth()->user()->rol === 'examinador')

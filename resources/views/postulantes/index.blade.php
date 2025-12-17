@@ -5,24 +5,29 @@
 
     {{-- TÍTULO --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold">
-            👥 Gestión de Postulantes
-        </h4>
-
-        @if(in_array(auth()->user()->rol, ['admin','examinador']))
-            <a href="{{ route('postulantes.create') }}" class="btn btn-primary">
-                ➕ Nuevo Postulante
-            </a>
-        @endif
+        <h4 class="fw-bold mb-0">👥 Gestión de Postulantes</h4>
+        <a href="{{ route('postulantes.create') }}" class="btn btn-primary">
+            ➕ Nuevo Postulante
+        </a>
     </div>
 
-    {{-- MENSAJE --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button class="btn-close" data-bs-dismiss="alert"></button>
+    {{-- BUSCADOR --}}
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" id="buscar"
+                   class="form-control"
+                   placeholder="🔍 Buscar por DNI o nombre">
         </div>
-    @endif
+
+        <div class="col-md-3">
+            <form method="GET" class="d-flex gap-2">
+                <input type="date" name="fecha"
+                    value="{{ request('fecha', now()->toDateString()) }}"
+                    class="form-control">
+                <button class="btn btn-primary">Buscar</button>
+            </form>
+        </div>
+    </div>
 
     {{-- TABLA --}}
     <div class="card shadow-sm">
@@ -34,118 +39,101 @@
                         <th>DNI</th>
                         <th>Postulante</th>
                         <th>Licencia</th>
-                        <th>Psicofísico</th>
-                        <th>Días restantes</th>
+                        <th>Psicosomático</th>
+                        <th>Vence</th>
+                        <th>Días</th>
                         <th>Estado</th>
                         <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
 
-                <tbody>
+                <tbody id="tabla">
                 @forelse ($postulantes as $p)
+                    @php
+                        $proceso = $p->procesoActivo;
+                        $vence = $p->fechaVencimientoPsicosomatico();
+                        $dias = $p->diasRestantesPsicosomatico();
+                        $estado = $dias === null ? 'SIN REGISTRO' :
+                                  ($dias < 0 ? 'VENCIDO' : ($dias <= 7 ? 'POR VENCER' : 'VIGENTE'));
+                    @endphp
+
                     <tr>
-                        <td class="fw-semibold">{{ $p->dni }}</td>
+                        <td class="fw-bold">{{ $p->dni }}</td>
 
                         <td>
-                            {{ $p->nombres }} <br>
+                            {{ $p->nombres }}<br>
                             <small class="text-muted">{{ $p->apellidos }}</small>
                         </td>
 
-                        <td>
-                            <span class="badge bg-info">
-                                {{ $p->tipo_licencia }}
-                            </span>
-                        </td>
+                        {{-- TIPO LICENCIA --}}
+                        <td>{{ $proceso->tipo_licencia ?? '—' }}</td>
 
-                        {{-- FECHA PSICOFÍSICO --}}
-                        <td>
-                            @if($p->fecha_psicofisico)
-                                {{ \Carbon\Carbon::parse($p->fecha_psicofisico)->format('d/m/Y') }}
-                            @else
-                                —
-                            @endif
+                        {{-- FECHA PSICOSOMÁTICO --}}
+                        <td>{{ $p->fecha_psicosomatico?->format('d/m/Y') ?? '—' }}</td>
 
-                        </td>
+                        {{-- FECHA VENCIMIENTO --}}
+                        <td>{{ $vence?->format('d/m/Y') ?? '—' }}</td>
 
                         {{-- DÍAS RESTANTES --}}
                         <td>
-                            @if ($p->dias_restantes_psicofisico !== null)
-                                <span class="fw-bold
-                                    {{ $p->dias_restantes_psicofisico <= 7 ? 'text-danger' : 'text-success' }}">
-                                    {{ $p->dias_restantes_psicofisico }} días
+                            @if($dias !== null)
+                                <span class="fw-bold {{ $dias <= 7 ? 'text-danger' : 'text-success' }}">
+                                    {{ $dias }}
                                 </span>
                             @else
                                 —
                             @endif
                         </td>
 
-
                         {{-- ESTADO --}}
                         <td>
-                            @switch($p->estado_psicofisico)
+                            @switch($estado)
                                 @case('VIGENTE')
-                                    <span class="badge bg-success">
-                                        🟢 Vigente
-                                    </span>
+                                    <span class="badge bg-success">Vigente</span>
                                     @break
-
                                 @case('POR VENCER')
-                                    <span class="badge bg-warning text-dark">
-                                        🟡 Por vencer
-                                    </span>
+                                    <span class="badge bg-warning text-dark">Por vencer</span>
                                     @break
-
                                 @case('VENCIDO')
-                                    <span class="badge bg-danger">
-                                        🔴 Vencido
-                                    </span>
+                                    <span class="badge bg-danger">Vencido</span>
                                     @break
-
                                 @default
-                                    <span class="badge bg-secondary">
-                                        ⚪ Sin registro
-                                    </span>
+                                    <span class="badge bg-secondary">Sin registro</span>
                             @endswitch
                         </td>
 
                         {{-- ACCIONES --}}
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-
-                                <a href="{{ route('postulantes.edit', $p) }}"
-                                    class="btn btn-outline-primary"
-                                    title="Editar postulante">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-
-
-                                @if(auth()->user()->rol === 'admin')
-                                    <form method="POST"
-                                          action="{{ route('postulantes.destroy', $p) }}"
-                                          onsubmit="return confirm('¿Eliminar postulante?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-outline-danger">
-                                            🗑️
-                                        </button>
-                                    </form>
-                                @endif
-
-                            </div>
+                            <a href="{{ route('postulantes.edit', $p) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                ✏️
+                            </a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             No hay postulantes registrados
                         </td>
                     </tr>
                 @endforelse
                 </tbody>
-
             </table>
 
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('buscar').addEventListener('keyup', function () {
+    let value = this.value.toLowerCase();
+    document.querySelectorAll('#tabla tr').forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(value)
+            ? ''
+            : 'none';
+    });
+});
+</script>
+@endpush
