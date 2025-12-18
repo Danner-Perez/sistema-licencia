@@ -106,4 +106,13 @@ class ProcesoLicencia extends Model
             && $this->estado === 'EN_PROCESO'
             && $this->estado_psicosomatico === 'VIGENTE';
     }
+    
+
+    public function examen()
+    {
+        return $this->hasOne(Examen::class, 'id_postulante', 'id_postulante');
+    }
+
+
+
 }

@@ -1,51 +1,48 @@
 @extends('layouts.app')
 
 @section('content')
-<h2 class="text-xl font-bold mb-4">Resultados de Examen</h2>
+<div class="card shadow">
+    <div class="card-header fw-bold">
+        📝 Registro de Examen
+    </div>
 
-<table class="w-full bg-white shadow rounded">
-    <thead class="bg-gray-200">
-        <tr>
-            <th class="p-2">DNI</th>
-            <th class="p-2">Postulante</th>
-            <th class="p-2">Resultado</th>
-            <th class="p-2">Acción</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach($postulantes as $p)
-        <tr class="border-t">
-            <td class="p-2">{{ $p->dni }}</td>
-            <td class="p-2">{{ $p->nombres }} {{ $p->apellidos }}</td>
+    <div class="card-body">
 
-            <td class="p-2">
-                @if($p->resultado === 'APROBADO')
-                    <span class="text-green-600 font-bold">APROBADO</span>
-                @elseif($p->resultado === 'NO APROBADO')
-                    <span class="text-red-600 font-bold">NO APROBADO</span>
-                @else
-                    <span class="text-gray-500">PENDIENTE</span>
-                @endif
-            </td>
+        <form method="POST" action="{{ route('examenes.store') }}">
+            @csrf
 
-            <td class="p-2">
-                <form method="POST" action="{{ route('examenes.resultado') }}">
-                    @csrf
-                    <input type="hidden" name="id" value="{{ $p->id }}">
+            <div class="mb-3">
+                <label class="form-label">Postulante</label>
+                <select name="proceso_licencia_id" class="form-select" required>
+                    <option value="">Seleccione</option>
+                    @foreach($procesos as $proceso)
+                        <option value="{{ $proceso->id }}">
+                            {{ $proceso->postulante->dni }} - 
+                            {{ $proceso->postulante->nombres }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                    <button name="resultado" value="APROBADO"
-                            class="bg-green-600 text-white px-2 py-1 rounded">
-                        Aprobar
-                    </button>
+            <div class="mb-3">
+                <label class="form-label">Resultado</label>
+                <select name="resultado" class="form-select" required>
+                    <option value="">Seleccione</option>
+                    <option value="APROBADO">APROBADO</option>
+                    <option value="DESAPROBADO">DESAPROBADO</option>
+                </select>
+            </div>
 
-                    <button name="resultado" value="NO APROBADO"
-                            class="bg-red-600 text-white px-2 py-1 rounded">
-                        Desaprobar
-                    </button>
-                </form>
-            </td>
-        </tr>
-        @endforeach
-    </tbody>
-</table>
+            <div class="mb-3">
+                <label class="form-label">Observación</label>
+                <textarea name="observacion" class="form-control"></textarea>
+            </div>
+
+            <button class="btn btn-success">
+                💾 Registrar intento
+            </button>
+        </form>
+
+    </div>
+</div>
 @endsection

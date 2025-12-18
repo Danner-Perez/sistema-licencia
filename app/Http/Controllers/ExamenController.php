@@ -1,54 +1,61 @@
 <?php
 
 namespace App\Http\Controllers;
+use Illuminate\Support\Facades\DB;
 
-use App\Models\Postulante;
-use App\Models\Examen;
 use Illuminate\Http\Request;
-use Rap2hpoutre\FastExcel\FastExcel;
+use App\Models\Examen;
+use App\Models\IntentoExamen;
+use App\Models\ProcesoLicencia;
+use Carbon\Carbon;
 
 class ExamenController extends Controller
 {
+    /**
+     * Mostrar vista de registro de examen
+     */
     public function index()
     {
-        $postulantes = Postulante::with('examen')->get();
-        return view('examenes.index', compact('postulantes'));
+        // Procesos que NO tienen examen APROBADO
+        $procesos = ProcesoLicencia::whereNotExists(function ($q) {
+            $q->select(DB::raw(1))
+              ->from('examenes')
+              ->whereColumn(
+                  'procesos_licencia.postulante_id',
+                  'examenes.id_postulante'
+              )
+              ->where('resultado', 'APROBADO');
+        })
+        ->with('postulante') // opcional pero recomendado
+        ->get();
+
+        return view('examenes.index', compact('procesos'));
     }
 
-    public function resultado(Request $request)
+    /**
+     * Registrar intento de examen
+     */
+    public function store(Request $request)
     {
-        Examen::updateOrCreate(
-            ['postulante_id' => $request->id],
-            [
-                'resultado' => $request->resultado,
-                'fecha_examen' => now()
-            ]
-        );
+        $request->validate([
+            'proceso_licencia_id' => 'required|exists:procesos_licencia,id',
+            'resultado' => 'required|in:APROBADO,NO APROBADO',
+            'observacion' => 'nullable|string'
+        ]);
 
-        return back()->with('success', 'Resultado guardado');
-    }
+        // 🔹 Obtener el proceso
+        $proceso = ProcesoLicencia::findOrFail($request->proceso_licencia_id);
 
-    public function exportar(Request $request)
-    {
-        $examenes = Examen::with('postulante')
-            ->when($request->fecha, fn ($q) =>
-                $q->whereDate('fecha_examen', $request->fecha)
-            )
-            ->when($request->resultado, fn ($q) =>
-                $q->where('resultado', $request->resultado)
-            )
-            ->get()
-            ->map(function ($e) {
-                return [
-                    'DNI'           => $e->postulante->dni,
-                    'Nombres'       => $e->postulante->nombres,
-                    'Apellidos'     => $e->postulante->apellidos,
-                    'Resultado'     => $e->resultado,
-                    'Fecha Examen'  => $e->fecha_examen,
-                ];
-            });
+        // 🔹 Crear examen usando el postulante del proceso
+        Examen::create([
+            'id_postulante' => $proceso->postulante_id, // ✅ AQUÍ ESTÁ LA CLAVE
+            'fecha'         => now(),
+            'resultado'     => $request->resultado,
+            'observacion'   => $request->observacion,
+        ]);
 
-        return (new FastExcel($examenes))
-            ->download('resultados_examen.xlsx');
+        return redirect()
+            ->route('examenes.index')
+            ->with('success', 'Resultado del examen registrado correctamente');
     }
 }

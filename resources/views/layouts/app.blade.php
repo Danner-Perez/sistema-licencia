@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>{{ config('app.name', 'Sistema de Licencias') }}</title>
@@ -10,7 +11,10 @@
 
     {{-- Opcional: iconos --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    
 </head>
+
 <body class="bg-light">
 
     {{-- Navegación --}}
@@ -39,6 +43,9 @@
 
     {{-- Bootstrap JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    @stack('scripts')
 
 </body>
 </html>

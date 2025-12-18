@@ -1,5 +1,6 @@
 <?php
 
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,18 +15,13 @@ return new class extends Migration {
             $table->enum('resultado', ['APROBADO','NO APROBADO']);
             $table->string('observacion')->nullable();
 
-            $table->unsignedBigInteger('evaluado_por');
-
             $table->foreign('id_postulante')
-                  ->references('id_postulante')
-                  ->on('postulantes');
-
-            $table->foreign('evaluado_por')
-                  ->references('id_usuario')
-                  ->on('usuarios');
+                ->references('id_postulante')
+                ->on('postulantes');
 
             $table->timestamps();
         });
+
     }
 
     public function down(): void {

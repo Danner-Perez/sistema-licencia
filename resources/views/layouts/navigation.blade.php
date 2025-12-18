@@ -1,8 +1,9 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
 
+        {{-- LOGO / DASHBOARD --}}
         <a class="navbar-brand" href="{{ route('dashboard') }}">
-            🚗 Sistema Licencias
+            Sistema Licencias
         </a>
 
         <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
@@ -11,85 +12,45 @@
 
         <div class="collapse navbar-collapse" id="menu">
 
+            @php
+                // Menu por rol
+                $menu = [
+                    'admin' => [
+                        ['name' => 'Postulantes', 'route' => 'postulantes.index'],
+                        ['name' => 'Asistencia', 'route' => 'asistencias.index'],
+                        ['name' => 'Verificación', 'route' => 'verificaciones.index'],
+                        ['name' => 'Exámenes', 'route' => 'examenes.index'],
+                    ],
+                    'examinador' => [
+                        ['name' => 'Postulantes', 'route' => 'postulantes.index'],
+                        ['name' => 'Verificación', 'route' => 'verificaciones.index'],
+                        ['name' => 'Exámenes', 'route' => 'examenes.index'],
+                    ],
+                    'asistencia' => [
+                        ['name' => 'Asistencia', 'route' => 'asistencias.index'],
+                    ],
+                ];
+
+                $rolActual = auth()->user()->rol;
+            @endphp
+
             <ul class="navbar-nav me-auto">
-
-                {{-- DASHBOARD (TODOS) --}}
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('dashboard') }}">
-                        Dashboard
-                    </a>
-                </li>
-
-                {{-- ADMIN (TODO) --}}
-                @if(auth()->user()->rol === 'admin')
-
+                @foreach($menu[$rolActual] ?? [] as $item)
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('postulantes.index') }}">
-                            Postulantes
+                        <a class="nav-link {{ request()->is(str_replace('.index','*',$item['route'])) ? 'active' : '' }}"
+                           href="{{ route($item['route']) }}">
+                            {{ $item['name'] }}
                         </a>
                     </li>
-
-                    
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is('asistencias*') ? 'active' : '' }}" 
-                        href="{{ route('asistencias.index') }}">
-                            Asistencia
-                        </a>
-                    </li>
-
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            Verificación
-                        </a>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('examenes.index') }}">
-                            Exámenes
-                        </a>
-                    </li>
-
-
-                {{-- EXAMINADOR --}}
-                @elseif(auth()->user()->rol === 'examinador')
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('postulantes.index') }}">
-                            Postulantes
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('examenes.index') }}">
-                            Exámenes
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            Verificación
-                        </a>
-                    </li>
-
-                {{-- ASISTENCIA --}}
-                @elseif(auth()->user()->rol === 'asistencia')
-
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            Asistencia
-                        </a>
-                    </li>
-
-                @endif
-
+                @endforeach
             </ul>
 
             {{-- USUARIO --}}
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        {{ Auth::user()->name }} ({{ Auth::user()->rol }})
+                        {{ Auth::user()->name }} 
+                        <span class="badge bg-secondary">{{ $rolActual }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>

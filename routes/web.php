@@ -64,12 +64,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('verificaciones.')
         ->group(function () {
 
-            Route::get('/', [VerificacionController::class, 'index'])
-                ->name('index');
+            // Listado de verificaciones
+            Route::get('/', [VerificacionController::class, 'index'])->name('index');
 
-            Route::post('/registrar', [VerificacionController::class, 'registrar'])
-                ->name('registrar');
-        });
+            // Crear verificación
+            Route::get('/crear', [VerificacionController::class, 'create'])->name('create');
+            Route::post('/', [VerificacionController::class, 'store'])->name('store');
+
+            // Buscar postulante (AJAX) — debe ir antes de las rutas con parámetros
+            Route::get('/buscar-postulante', [VerificacionController::class, 'buscarPostulante'])
+                ->name('buscarPostulante');
+
+            // Editar / actualizar verificación
+            Route::get('/{verificacion}/editar', [VerificacionController::class, 'edit'])->name('edit');
+            Route::put('/{verificacion}', [VerificacionController::class, 'update'])->name('update');
+
+            // Eliminar verificación
+            Route::delete('/{verificacion}', [VerificacionController::class, 'destroy'])->name('destroy');
+    });
+
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -78,22 +93,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::middleware('rol:examinador,admin')
-        ->prefix('examenes')
-        ->name('examenes.')
-        ->group(function () {
+    ->prefix('examenes')
+    ->name('examenes.')
+    ->group(function () {
 
-            Route::get('/', [ExamenController::class, 'index'])
-                ->name('index');
+        // Vista principal de exámenes
+        Route::get('/', [ExamenController::class, 'index'])
+            ->name('index');
 
-            Route::post('/resultado', [ExamenController::class, 'resultado'])
-                ->name('resultado');
+        // Registrar intento de examen
+        Route::post('/registrar', [ExamenController::class, 'store'])
+            ->name('store');
 
-            // SOLO ADMIN
-            Route::middleware('rol:admin')->group(function () {
-                Route::get('/exportar', [ExamenController::class, 'exportar'])
-                    ->name('exportar');
-            });
+        // SOLO ADMIN
+        Route::middleware('rol:admin')->group(function () {
+
+            // Exportar resultados
+            Route::get('/exportar', [ExamenController::class, 'exportar'])
+                ->name('exportar');
+
         });
+    });
+
 
     /*
     |--------------------------------------------------------------------------
