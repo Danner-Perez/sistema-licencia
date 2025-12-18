@@ -16,10 +16,11 @@ class AsistenciaController extends Controller
         $dni = $request->input('dni');
 
         $postulantes = Postulante::when($dni, function ($query, $dni) {
-                $query->where('dni', 'like', "%{$dni}%");
-            })
-            ->orderBy('fecha_registro', 'asc')
-            ->get();
+            $query->where('dni', 'like', "%{$dni}%");
+        })
+        ->orderBy('created_at', 'asc') // ✅ corregido
+        ->get();
+
 
         $asistenciasHoy = Asistencia::whereDate('fecha', $hoy)
             ->pluck('postulante_id')

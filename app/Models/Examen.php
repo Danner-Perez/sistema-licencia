@@ -13,7 +13,11 @@ class Examen extends Model
         'id_postulante',
         'fecha',
         'resultado',
-        'observacion',
+        'placa',
+        'observacion'
+    ];
+        protected $casts = [
+        'fecha' => 'datetime',
     ];
 
     public function postulante()

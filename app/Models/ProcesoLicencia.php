@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-
+use App\Models\Examen;
 class ProcesoLicencia extends Model
 {
     protected $table = 'procesos_licencia';
@@ -26,6 +26,14 @@ class ProcesoLicencia extends Model
     | RELACIONES
     |--------------------------------------------------------------------------
     */
+    public function examenes()
+    {
+        return $this->hasMany(
+            Examen::class,
+            'id_postulante',   // FK en examenes
+            'postulante_id'    // FK en procesos_licencia
+        );
+    }
 
     public function postulante()
     {

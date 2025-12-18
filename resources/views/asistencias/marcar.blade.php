@@ -52,7 +52,7 @@
                     </td>
 
                     <td class="p-3 text-sm text-gray-600">
-                        {{ $p->tipo_licencia }}
+                        {{ optional($p->procesoActivo)->tipo_licencia ?? 'N/D' }}
                     </td>
 
                     <td class="p-3 text-center">
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.disabled = true;
             btn.innerText = 'Marcando...';
 
-            fetch("{{ route('asistencias.marcar.ajax') }}", {
+            fetch("{{ route('asistencias.marcar') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

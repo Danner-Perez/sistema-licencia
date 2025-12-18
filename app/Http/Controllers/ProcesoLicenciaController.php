@@ -1,99 +1,112 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Postulante;
-use App\Models\ProcesoLicencia;
-use Illuminate\Http\Request;
-use Carbon\Carbon;
+use App\Models\Examen;
 
-class ProcesoLicenciaController extends Controller
+class ProcesoLicencia extends Model
 {
-    /**
-     * Listar procesos de licencia
-     */
-    public function index()
-    {
-        $procesos = ProcesoLicencia::with('postulante')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    use HasFactory;
 
-        return view('procesos.index', compact('procesos'));
+    protected $table = 'procesos_licencia';
+
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'postulante_id',
+        'tipo_licencia',
+        'fecha_inicio',
+        'estado',
+    ];
+
+    /* ===============================
+     |  CONSTANTES DE ESTADO
+     |===============================*/
+    public const EN_PROCESO = 'EN_PROCESO';
+    public const APROBADO   = 'APROBADO';
+    public const ANULADO    = 'ANULADO';
+
+    /* ===============================
+     |  RELACIONES
+     |===============================*/
+
+    /**
+     * Un proceso pertenece a un postulante
+     */
+    public function postulante()
+    {
+        return $this->belongsTo(
+            Postulante::class,
+            'postulante_id',
+            'id_postulante'
+        );
     }
 
     /**
-     * Formulario para iniciar proceso de licencia
+     * Un proceso puede tener varios exámenes
+     * (relación por postulante)
      */
-    public function create(Postulante $postulante)
+    public function examenes()
     {
-        return view('procesos.create', compact('postulante'));
+        return $this->hasMany(
+            Examen::class,
+            'id_postulante',   // FK en examenes
+            'postulante_id'    // FK en procesos
+        );
+    }
+
+    /* ===============================
+     |  SCOPES
+     |===============================*/
+
+    /**
+     * Procesos activos
+     */
+    public function scopeActivos($query)
+    {
+        return $query->where('estado', self::EN_PROCESO);
     }
 
     /**
-     * Guardar nuevo proceso de licencia
+     * Procesos aprobados
      */
-    public function store(Request $request)
+    public function scopeAprobados($query)
     {
-        $request->validate([
-            'postulante_id' => 'required|exists:postulantes,id_postulante',
-            'tipo_licencia' => 'required|string|max:20',
-        ]);
+        return $query->where('estado', self::APROBADO);
+    }
 
-        $postulante = Postulante::findOrFail($request->postulante_id);
+    /**
+     * Procesos anulados
+     */
+    public function scopeAnulados($query)
+    {
+        return $query->where('estado', self::ANULADO);
+    }
 
-        // ✔ Psicosomático vigente
-        if (! $postulante->psicosomaticoVigente()) {
-            return back()->withErrors([
-                'fecha_psicosomatico' =>
-                'Psicosomático vencido (6 meses)'
-            ]);
-        }
+    /* ===============================
+     |  MÉTODOS DE NEGOCIO
+     |===============================*/
 
-        // ✔ Evitar duplicado activo
-        $existe = ProcesoLicencia::where('postulante_id', $postulante->id_postulante)
-            ->where('tipo_licencia', $request->tipo_licencia)
-            ->where('estado', 'EN_PROCESO')
+    /**
+     * Verifica si el proceso tiene al menos
+     * un examen aprobado
+     */
+    public function tieneExamenAprobado(): bool
+    {
+        return $this->examenes()
+            ->where('resultado', 'APROBADO')
             ->exists();
-
-        if ($existe) {
-            return back()->withErrors([
-                'tipo_licencia' => 'Ya existe un proceso activo'
-            ]);
-        }
-
-        ProcesoLicencia::create([
-            'postulante_id' => $postulante->id_postulante,
-            'tipo_licencia' => $request->tipo_licencia,
-            'fecha_inicio'  => now(),
-        ]);
-
-        return back()->with('success', 'Proceso iniciado');
-    }
-
-
-    /**
-     * Cambiar estado del proceso
-     */
-    public function cambiarEstado(Request $request, ProcesoLicencia $proceso)
-    {
-        $request->validate([
-            'estado' => 'required|in:APROBADO,ANULADO',
-        ]);
-
-        $proceso->update([
-            'estado' => $request->estado,
-        ]);
-
-        return back()->with('success', 'Estado del proceso actualizado');
     }
 
     /**
-     * Eliminar proceso
+     * Verifica si el proceso puede aprobarse
      */
-    public function destroy(ProcesoLicencia $proceso)
+    public function puedeAprobarse(): bool
     {
-        $proceso->delete();
-
-        return back()->with('success', 'Proceso eliminado correctamente');
+        return $this->estado === self::EN_PROCESO
+            && $this->tieneExamenAprobado();
     }
 }

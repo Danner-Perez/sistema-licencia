@@ -97,23 +97,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('examenes.')
     ->group(function () {
 
-        // Vista principal de exámenes
         Route::get('/', [ExamenController::class, 'index'])
             ->name('index');
 
-        // Registrar intento de examen
+        Route::get('/registrar', [ExamenController::class, 'create'])
+            ->name('create');
+
         Route::post('/registrar', [ExamenController::class, 'store'])
             ->name('store');
 
-        // SOLO ADMIN
-        Route::middleware('rol:admin')->group(function () {
-
-            // Exportar resultados
-            Route::get('/exportar', [ExamenController::class, 'exportar'])
-                ->name('exportar');
-
-        });
+        // 🔴 ESTA RUTA FALTABA
+        Route::get('/buscar', [ExamenController::class, 'buscarPostulante'])
+            ->name('buscar');
+            
+            Route::get('/exportar-hoy', [ExamenController::class, 'exportarHoy'])
+            ->name('exportarHoy');
     });
+
 
 
     /*
