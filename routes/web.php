@@ -33,6 +33,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('rol:admin,examinador')->group(function () {
         Route::resource('postulantes', PostulanteController::class)
             ->except(['show']);
+        Route::get('/postulantes/buscar-dni', [PostulanteController::class, 'buscarPorDni'])
+            ->name('postulantes.buscar-dni');
+
     });
 
     /*

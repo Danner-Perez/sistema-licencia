@@ -14,6 +14,7 @@ class ProcesoLicencia extends Model
         'tipo_licencia',
         'fecha_inicio',
         'estado',
+        'tipo_tramite', 
     ];
 
     protected $casts = [

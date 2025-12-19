@@ -1,7 +1,45 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 py-6">
+{{-- TOAST ERROR --}}
+@if ($errors->any())
+<div
+    x-data="{ show: true }"
+    x-init="setTimeout(() => show = false, 4000)"
+    x-show="show"
+    x-transition
+    class="fixed top-5 right-5 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg z-50"
+>
+    ❌ {{ $errors->first() }}
+</div>
+@endif
+@if ($errors->any())
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.store('openCreateOnError', true)
+    })
+</script>
+@endif
+
+{{-- TOAST SUCCESS --}}
+@if(session('success'))
+<div
+    x-data="{ show: true }"
+    x-init="setTimeout(() => show = false, 3000)"
+    x-show="show"
+    x-transition
+    class="fixed top-5 right-5 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+    ✅ {{ session('success') }}
+</div>
+@endif
+
+<div
+    x-data="{
+        openCreate: false,
+        openEdit: false,
+        postulante: {}
+    }"
+>
 
     {{-- TÍTULO --}}
     <div class="flex justify-between items-center mb-6">
@@ -9,22 +47,23 @@
             👥 Gestión de Postulantes
         </h1>
 
-        <a href="{{ route('postulantes.create') }}"
-           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
+        <button
+            @click="openCreate = true"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow">
             ➕ Nuevo Postulante
-        </a>
+        </button>
     </div>
 
     {{-- FILTROS --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
         <input type="text" id="buscar"
-            placeholder="🔍 Buscar por DNI o nombre"
-            class="w-full rounded-lg border-gray-300 focus:ring focus:ring-blue-200">
+               placeholder="🔍 Buscar por DNI o nombre"
+               class="w-full rounded-lg border-gray-300 focus:ring focus:ring-blue-200">
 
         <form method="GET" class="flex gap-2">
             <input type="date" name="fecha"
-                value="{{ request('fecha', now()->toDateString()) }}"
-                class="rounded-lg border-gray-300 focus:ring focus:ring-blue-200">
+                   value="{{ request('fecha', now()->toDateString()) }}"
+                   class="rounded-lg border-gray-300 focus:ring focus:ring-blue-200">
             <button
                 class="bg-gray-800 hover:bg-gray-900 text-white px-4 rounded-lg">
                 Buscar
@@ -114,10 +153,25 @@
                     </td>
 
                     <td class="px-4 py-3 text-center">
-                        <a href="{{ route('postulantes.edit', $p) }}"
-                           class="text-blue-600 hover:text-blue-800 font-medium">
+                        <button
+                            @click="
+                                postulante = {
+                                    id: {{ $p->id_postulante }},
+                                    dni: '{{ $p->dni }}',
+                                    nombres: '{{ $p->nombres }}',
+                                    apellidos: '{{ $p->apellidos }}',
+                                    fecha_psicosomatico: '{{ optional($p->fecha_psicosomatico)->format('Y-m-d') }}',
+                                    tipo_licencia: '{{ $p->procesoActivo->tipo_licencia ?? '' }}'
+                                };
+                                openEdit = true;
+                            "
+
+                            class="text-blue-600 hover:text-blue-800 font-medium"
+                        >
                             ✏️ Editar
-                        </a>
+                        </button>
+
+
                     </td>
                 </tr>
             @empty
@@ -131,7 +185,12 @@
         </table>
     </div>
 
+    {{-- MODALES --}}
+    @include('postulantes.modal-create')
+    @include('postulantes.modal-edit')
+
 </div>
+
 @endsection
 
 @push('scripts')

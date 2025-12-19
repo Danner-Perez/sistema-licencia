@@ -12,6 +12,48 @@ class PostulanteController extends Controller
     /**
      * Listar postulantes registrados hoy
      */
+    private $apiToken = 'apis-token-8574.bPsef4wHOYjVwA7bFoDMZqLLrNrAMKiY';
+    
+    private function consultarDni($dni)
+    {
+        $curl = curl_init();
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://api.apis.net.pe/v2/reniec/dni?numero=' . $dni,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 2,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_HTTPHEADER => [
+                'Referer: https://apis.net.pe/consulta-dni-api',
+                'Authorization: Bearer ' . $this->apiToken,
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+
+        if ($err) {
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        // Retorna nombres y apellidos si existen
+        if (isset($data['nombres']) && isset($data['apellidoPaterno']) && isset($data['apellidoMaterno'])) {
+            return [
+                'nombres' => $data['nombres'],
+                'apellidos' => $data['apellidoPaterno'] . ' ' . $data['apellidoMaterno'],
+            ];
+        }
+
+        return null;
+    }
+
+
+
     public function index(Request $request)
     {
         $fecha = $request->get('fecha', now()->toDateString());
@@ -35,50 +77,61 @@ class PostulanteController extends Controller
     /**
      * Guardar nuevo postulante y proceso de licencia automáticamente
      */
-    public function store(Request $request)
+     public function store(Request $request)
     {
         $request->validate([
-            'dni'                => 'required|digits:8',
-            'nombres'            => 'required|string|max:100',
-            'apellidos'          => 'required|string|max:100',
-            'fecha_psicosomatico'=> 'required|date',
-            'tipo_licencia'      => 'required|in:A1,A2A,A2B,A3',
+            'dni'                 => 'required|digits:8',
+            'nombres'             => 'nullable|string|max:100',
+            'apellidos'           => 'nullable|string|max:100',
+            'fecha_psicosomatico' => 'required|date',
+            'tipo_licencia'       => 'required|in:A-I,A-IIa,A-IIb,A-IIIa,A-IIIb,A-IIIc',
         ]);
 
         $hoy = now()->toDateString();
 
-        // ⚠ Verificar si ya hay un postulante con el mismo DNI registrado hoy
         $existeHoy = Postulante::where('dni', $request->dni)
-                        ->whereDate('created_at', $hoy)
-                        ->exists();
+            ->whereDate('created_at', $hoy)
+            ->exists();
 
         if ($existeHoy) {
-            return redirect()->back()
+            return back()
                 ->withInput()
-                ->withErrors(['dni' => 'Este postulante ya fue registrado hoy.']);
+                ->withErrors(['dni' => 'Este postulante ya fue registrado hoy.'])
+                ->with('openCreateModal', true);
         }
 
-        // Crear postulante
+        // Consultar API si no vienen nombres/apellidos
+        if (empty($request->nombres) || empty($request->apellidos)) {
+            $apiData = $this->consultarDni($request->dni);
+            if ($apiData) {
+                $request->merge($apiData); // Sobrescribe nombres/apellidos con los de la API
+            }
+        }
+
         $postulante = Postulante::create([
-            'dni'                => $request->dni,
-            'nombres'            => $request->nombres,
-            'apellidos'          => $request->apellidos,
-            'fecha_psicosomatico'=> $request->fecha_psicosomatico,
-            'registrado_por'     => auth()->id(),
+            'dni'                 => $request->dni,
+            'nombres'             => $request->nombres,
+            'apellidos'           => $request->apellidos,
+            'fecha_psicosomatico' => $request->fecha_psicosomatico,
+            'registrado_por'      => auth()->id(),
         ]);
 
-        // Crear proceso de licencia automáticamente
+        $tipoTramite = $request->tipo_licencia === 'A-I' ? 'OBTENCIÓN' : 'RECATEGORIZACIÓN';
+
         ProcesoLicencia::create([
             'postulante_id' => $postulante->id_postulante,
             'tipo_licencia' => $request->tipo_licencia,
             'fecha_inicio'  => $hoy,
             'estado'        => 'EN_PROCESO',
+            'tipo_tramite'  => $tipoTramite,
         ]);
 
         return redirect()
             ->route('postulantes.index')
             ->with('success', 'Postulante y proceso de licencia registrados correctamente');
     }
+
+
 
 
     /**
@@ -98,29 +151,45 @@ class PostulanteController extends Controller
             'nombres'             => 'required|string|max:100',
             'apellidos'           => 'required|string|max:100',
             'fecha_psicosomatico' => 'required|date',
-            'validado_reniec'     => 'required|boolean',
-            'tipo_licencia'       => 'nullable|in:A1,A2A,A2B,A3',
+            'tipo_licencia'       => 'required|in:A-I,A-IIa,A-IIb,A-IIIa,A-IIIb,A-IIIc',
         ]);
 
-        // Actualizar datos del postulante
         $postulante->update([
             'nombres'             => $request->nombres,
             'apellidos'           => $request->apellidos,
             'fecha_psicosomatico' => $request->fecha_psicosomatico,
-            'validado_reniec'     => $request->validado_reniec,
         ]);
 
-        // Actualizar tipo de licencia del proceso activo
-        if ($request->filled('tipo_licencia') && $postulante->procesoActivo) {
+        if ($postulante->procesoActivo) {
+            $tipoTramite = $request->tipo_licencia === 'A-I' ? 'OBTENCIÓN' : 'RECATEGORIZACIÓN';
+
             $postulante->procesoActivo->update([
                 'tipo_licencia' => $request->tipo_licencia,
+                'tipo_tramite'  => $tipoTramite,
             ]);
         }
+
 
         return redirect()
             ->route('postulantes.index')
             ->with('success', 'Postulante actualizado correctamente');
     }
+    public function buscarPorDni(Request $request)
+    {
+        $request->validate([
+            'dni' => 'required|digits:8',
+        ]);
+
+        $apiData = $this->consultarDni($request->dni);
+
+        if (!$apiData) {
+            return response()->json(['error' => 'No se encontró el DNI'], 404);
+        }
+
+        return response()->json($apiData);
+    }
+
+
 
     /**
      * Eliminar postulante

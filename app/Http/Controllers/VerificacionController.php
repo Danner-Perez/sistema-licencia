@@ -8,18 +8,25 @@ use Carbon\Carbon;
 
 class VerificacionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $verificaciones = Verificacion::with([
-            'postulante.procesoActivo',
-            'verificador'
-        ])
-        ->whereDate('fecha', now()->toDateString()) // 👈 solo verificaciones de HOY (opcional)
-        ->orderBy('fecha', 'desc')
-        ->get();
+        $query = Verificacion::with(['postulante.procesoActivo','verificador'])
+            ->orderBy('fecha','desc');
 
-    return view('verificaciones.index', compact('verificaciones'));
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('postulante', function($q) use ($search) {
+                $q->where('dni','like',"%{$search}%")
+                ->orWhere('nombres','like',"%{$search}%")
+                ->orWhere('apellidos','like',"%{$search}%");
+            });
+        }
+
+        $verificaciones = $query->paginate(10)->withQueryString();
+
+        return view('verificaciones.index', compact('verificaciones'));
     }
+
 
     public function create()
     {
@@ -38,7 +45,7 @@ class VerificacionController extends Controller
 
         $hoy = now()->toDateString();
 
-        // 🔒 VALIDAR ASISTENCIA HOY
+// 🔒 VALIDAR ASISTENCIA HOY
         $tieneAsistencia = \App\Models\Asistencia::where('postulante_id', $request->id_postulante)
             ->whereDate('fecha', $hoy)
             ->exists();
@@ -51,6 +58,21 @@ class VerificacionController extends Controller
                 ])
                 ->withInput();
         }
+
+        // 🔒 VALIDAR VERIFICACIÓN DUPLICADA
+        $verificacionHoy = Verificacion::where('id_postulante', $request->id_postulante)
+            ->whereDate('fecha', $hoy)
+            ->exists();
+
+        if ($verificacionHoy) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'id_postulante' => '❌ El postulante ya tiene una verificación registrada hoy.'
+                ])
+                ->withInput();
+        }
+
 
         Verificacion::create([
             'id_postulante'  => $request->id_postulante,
@@ -96,26 +118,51 @@ class VerificacionController extends Controller
     }
 
 
-    public function edit(Verificacion $verificacion)
+    public function edit($id)
     {
+        $verificacion = Verificacion::with('postulante')->findOrFail($id);
         return view('verificaciones.edit', compact('verificacion'));
     }
 
-    public function update(Request $request, Verificacion $verificacion)
+    public function update(Request $request, $id)
     {
-        $request->validate([
+        // 1️⃣ Validación inicial
+        $validated = $request->validate([
             'id_postulante' => 'required|exists:postulantes,id_postulante',
-            'placa'         => 'required|string|max:20',
-            'tipo_vehiculo' => 'nullable|string|max:50',
-            'marca'         => 'nullable|string|max:50',
-            'modelo'        => 'nullable|string|max:50',
+            'placa' => 'required|string|max:10',
         ]);
 
-        $verificacion->update($request->all());
+        $hoy = now()->toDateString();
 
+        // 2️⃣ Verificar duplicado ignorando la verificación actual
+        $verificacionDuplicada = Verificacion::where('id_postulante', $validated['id_postulante'])
+            ->whereDate('fecha', $hoy)
+            ->where('id_verificacion', '!=', $id) // ✅ PK correcta
+            ->exists();
+
+        if ($verificacionDuplicada) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'id_postulante' => '❌ Ya existe otra verificación para este postulante hoy.'
+                ])
+                ->withInput();
+        }
+
+        // 3️⃣ Actualizar registro
+        $verificacion = Verificacion::findOrFail($id);
+
+        $verificacion->update([
+            'id_postulante' => $validated['id_postulante'],
+            'placa' => $validated['placa'],
+        ]);
+
+        // 4️⃣ Retornar con mensaje de éxito
         return redirect()->route('verificaciones.index')
-            ->with('success', 'Verificación actualizada correctamente');
+                        ->with('success', '✅ Verificación actualizada correctamente');
     }
+
+
 
     public function destroy(Verificacion $verificacion)
     {

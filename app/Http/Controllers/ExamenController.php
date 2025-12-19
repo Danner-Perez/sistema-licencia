@@ -57,7 +57,7 @@ class ExamenController extends Controller
                     'dni'           => $p->dni,
                     'nombre'        => "{$p->nombres} {$p->apellidos}",
                     'tipo_licencia' => $proceso?->tipo_licencia ?? 'N/D',
-                    'proceso_id'    => $proceso?->id,
+                    'proceso_id' => $p->procesoActivo?->id ?? null,
                     'placa'         => $p->verificacion?->placa ?? '—',
                     'resultado'     => $p->examenes->first()?->resultado ?? 'SIN EXAMEN',
                 ];
@@ -115,7 +115,9 @@ class ExamenController extends Controller
                 return [
                     'id_postulante' => $p->id_postulante,
                     'dni'           => $p->dni,
-                    'nombre'        => "{$p->nombres} {$p->apellidos}",
+                    'nombres'       => $p->nombres,
+                    'apellidos'     => $p->apellidos,
+                    'nombre'        => "{$p->nombres} {$p->apellidos}", // concatenado
                     'proceso_id'    => optional($p->procesoActivo)->id,
                     'tipo_licencia' => optional($p->procesoActivo)->tipo_licencia ?? 'N/D',
                     'placa'         => optional($p->ultimaVerificacion)->placa ?? '—',
@@ -123,6 +125,7 @@ class ExamenController extends Controller
                 ];
             })
         );
+
     }
 
 
@@ -137,10 +140,10 @@ class ExamenController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_postulante'        => 'required|exists:postulantes,id_postulante',
-            'proceso_licencia_id'  => 'required|exists:procesos_licencia,id',
-            'resultado'            => 'required|in:APROBADO,NO APROBADO',
+            'id_postulante' => 'required|exists:postulantes,id_postulante',
+            'resultado'     => 'required|in:APROBADO,NO APROBADO',
         ]);
+
 
         $hoy = Carbon::today();
 

@@ -16,20 +16,26 @@ class AsistenciaController extends Controller
         $dni = $request->input('dni');
 
         $postulantes = Postulante::whereDate('created_at', $fechaHoy)
-            ->when($dni, function ($query, $dni) {
-                $query->where('dni', 'like', "%{$dni}%");
-            })
+            ->when($dni, fn($q) => $q->where('dni', 'like', "%{$dni}%"))
             ->with([
                 'procesoActivo',
-                'asistencias' => function ($q) use ($fechaHoy) {
-                    $q->whereDate('fecha', $fechaHoy);
-                }
+                'asistencias' => fn($q) => $q->whereDate('fecha', $fechaHoy)
             ])
             ->orderBy('nombres')
             ->get();
 
-        return view('asistencias.marcar', compact('postulantes', 'fechaHoy'));
+        $asistidos = $postulantes->filter(fn($p) => $p->asistencias->isNotEmpty())->count();
+        $pendientes = $postulantes->count() - $asistidos;
+
+        return view('asistencias.marcar', compact(
+            'postulantes',
+            'fechaHoy',
+            'asistidos',
+            'pendientes'
+        ));
     }
+
+
 
 
 
@@ -53,7 +59,7 @@ class AsistenciaController extends Controller
             ], 422);
         }
 
-        Asistencia::create([
+        $asistencia = Asistencia::create([
             'postulante_id' => $request->postulante_id,
             'fecha' => $hoy,
             'hora_llegada' => now(),
@@ -62,9 +68,11 @@ class AsistenciaController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Asistencia registrada correctamente'
+            'message' => 'Asistencia registrada correctamente',
+            'hora_llegada' => Carbon::parse($asistencia->hora_llegada)->format('H:i:s')
         ]);
     }
+
 
 
 }
