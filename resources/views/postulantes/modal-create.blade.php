@@ -44,7 +44,7 @@
         >
             @csrf
 
-            @include('postulantes.form')
+            @include('postulantes.form-alpine') {{-- Aquí incluimos el formulario con toast y autocompletado --}}
 
             {{-- BOTONES --}}
             <div class="flex justify-end gap-3 pt-4 border-t">

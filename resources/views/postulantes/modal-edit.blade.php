@@ -51,7 +51,8 @@
                     type="text"
                     name="nombres"
                     x-model="postulante.nombres"
-                    class="w-full border rounded-lg px-3 py-2"
+                    class="w-full border rounded-lg px-3 py-2 bg-gray-100"
+                    readonly
                     required
                 >
             </div>
@@ -63,12 +64,13 @@
                     type="text"
                     name="apellidos"
                     x-model="postulante.apellidos"
-                    class="w-full border rounded-lg px-3 py-2"
+                    class="w-full border rounded-lg px-3 py-2 bg-gray-100"
+                    readonly
                     required
                 >
             </div>
 
-            {{-- TIPO LICENCIA (CORREGIDO) --}}
+            {{-- TIPO LICENCIA --}}
             <div>
                 <label class="block text-sm font-medium mb-1">Tipo de Licencia</label>
                 <select
