@@ -42,16 +42,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::middleware('rol:asistencia,admin')
-        ->prefix('asistencias')
-        ->name('asistencias.')
-        ->group(function () {
+    ->prefix('asistencias')
+    ->name('asistencias.')
+    ->group(function () {
 
-            Route::get('/', [AsistenciaController::class, 'index'])
-                ->name('index');
+        Route::get('/', [AsistenciaController::class, 'index'])
+            ->name('index');
 
-            Route::post('/marcar', [AsistenciaController::class, 'marcarAjax'])
-                ->name('marcar');
-        });
+        Route::post('/marcar', [AsistenciaController::class, 'marcar'])
+            ->name('marcar');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -92,6 +92,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     | examinador + admin
     |--------------------------------------------------------------------------
     */
+    /*
+    |--------------------------------------------------------------------------
+    | EXÁMENES
+    | examinador + admin
+    |--------------------------------------------------------------------------
+    */
     Route::middleware('rol:examinador,admin')
     ->prefix('examenes')
     ->name('examenes.')
@@ -106,13 +112,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/registrar', [ExamenController::class, 'store'])
             ->name('store');
 
-        // 🔴 ESTA RUTA FALTABA
         Route::get('/buscar', [ExamenController::class, 'buscarPostulante'])
             ->name('buscar');
-            
-            Route::get('/exportar-hoy', [ExamenController::class, 'exportarHoy'])
+
+        Route::get('/exportar-hoy', [ExamenController::class, 'exportarHoy'])
             ->name('exportarHoy');
+
+        // ✅ EDITAR EXAMEN
+        Route::get('/{examen}/edit', [ExamenController::class, 'edit'])
+            ->name('edit');
+
+        // ✅ ACTUALIZAR EXAMEN
+        Route::put('/{examen}', [ExamenController::class, 'update'])
+            ->name('update');
     });
+
+
 
 
 

@@ -2,111 +2,77 @@
 
 @section('content')
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Registrar Verificación</h2>
-        <a href="{{ route('verificaciones.index') }}" class="btn btn-secondary">⬅ Volver</a>
-    </div>
+    <h2>Editar Verificación</h2>
 
-    {{-- Errores de validación --}}
-    @if ($errors->any())
-        <div class="alert alert-danger mb-4">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>• {{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form action="{{ route('verificaciones.store') }}" method="POST">
+    <form action="{{ route('verificaciones.update', $verificacion) }}" method="POST">
         @csrf
+        @method('PUT')
 
-        {{-- BUSCADOR POSTULANTE --}}
-        <div class="mb-3 position-relative">
-            <label for="buscar-postulante" class="form-label">Buscar Postulante (DNI, nombres, apellidos)</label>
-            <input type="text" id="buscar-postulante" class="form-control" placeholder="Escriba al menos 3 caracteres" autocomplete="off">
-            <input type="hidden" name="id_postulante" id="postulante-id">
-            <div id="lista-postulantes" class="list-group mt-1 position-absolute w-100"></div>
-            <div id="error-busqueda" class="text-danger mt-1"></div>
-        </div>
+        {{-- BUSCADOR DINÁMICO POR DNI / NOMBRE --}}
+        <label>Postulante</label>
+        <input type="text" id="buscar-postulante" class="form-control mb-2"
+               placeholder="Escribe DNI o nombre..."
+               value="{{ $verificacion->postulante->dni }} - {{ $verificacion->postulante->nombres }} {{ $verificacion->postulante->apellidos }}">
+        <input type="hidden" name="id_postulante" id="id_postulante" value="{{ $verificacion->id_postulante }}">
 
-        {{-- PLACA --}}
-        <div class="mb-3">
-            <label for="placa" class="form-label">Placa</label>
-            <input type="text" name="placa" id="placa" class="form-control" required>
-        </div>
+        <ul id="resultado-postulante" class="list-group mb-3" style="position: absolute; z-index: 1000; width: 50%; display: none;"></ul>
 
-        {{-- BOTONES --}}
-        <div class="d-flex justify-content-end gap-2">
-            <a href="{{ route('verificaciones.index') }}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">Guardar Verificación</button>
-        </div>
+        <label>Placa</label>
+        <input type="text" name="placa" class="form-control mb-3" value="{{ $verificacion->placa }}" required>
+
+        <button class="btn btn-warning">Actualizar</button>
     </form>
 </div>
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-console.log('SCRIPT CARGADO');
+const input = document.getElementById('buscar-postulante');
+const selectId = document.getElementById('id_postulante');
+const resultado = document.getElementById('resultado-postulante');
 
-document.addEventListener('DOMContentLoaded', function() {
-    const input = document.getElementById('buscar-postulante');
-    const lista = document.getElementById('lista-postulantes');
-    const hidden = document.getElementById('postulante-id');
-    const errorDiv = document.getElementById('error-busqueda');
+input.addEventListener('input', function() {
+    const query = this.value;
 
-    let timeout = null;
+    if(query.length < 2) { 
+        resultado.style.display = 'none';
+        return;
+    }
 
-    input.addEventListener('keyup', function() {
-        
-        clearTimeout(timeout);
-        const query = this.value.trim();
-        lista.innerHTML = '';
-        errorDiv.textContent = '';
-        hidden.value = '';
+    fetch("{{ route('verificaciones.buscarPostulante') }}?query=" + query)
+        .then(response => response.json())
+        .then(data => {
+            resultado.innerHTML = '';
+            if(data.length === 0){
+                resultado.style.display = 'none';
+                return;
+            }
 
-        if (query.length < 3) {
-            errorDiv.textContent = 'Ingrese al menos 3 caracteres para buscar.';
-            return;
-        }
+            data.forEach(postulante => {
+                const li = document.createElement('li');
+                li.classList.add('list-group-item', 'list-group-item-action');
+                li.textContent = `${postulante.dni} - ${postulante.nombres} ${postulante.apellidos}`;
+                li.dataset.id = postulante.id_postulante;
+                li.style.cursor = 'pointer';
 
-        timeout = setTimeout(() => {
-            axios.get("/verificaciones/buscar-postulante", { params: { query } })
-                .then(res => {
-                    const data = res.data;
-                    lista.innerHTML = '';
-                    if (data.length === 0) {
-                        errorDiv.textContent = 'No se encontraron postulantes con esos datos.';
-                        return;
-                    }
-                    data.forEach(postulante => {
-                        const item = document.createElement('button');
-                        item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.textContent = `${postulante.nombres} ${postulante.apellidos} (DNI: ${postulante.dni})`;
-                        item.addEventListener('click', () => {
-                            input.value = `${postulante.nombres} ${postulante.apellidos} (DNI: ${postulante.dni})`;
-                            hidden.value = postulante.id_postulante;
-                            lista.innerHTML = '';
-                            errorDiv.textContent = '';
-                        });
-                        lista.appendChild(item);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    errorDiv.textContent = 'Ocurrió un error al buscar postulantes.';
+                li.addEventListener('click', function() {
+                    input.value = this.textContent;
+                    selectId.value = this.dataset.id;
+                    resultado.innerHTML = '';
+                    resultado.style.display = 'none';
                 });
-        }, 300);
-    });
 
-    // Ocultar lista si se hace clic fuera
-    document.addEventListener('click', function(e){
-        if (!lista.contains(e.target) && e.target !== input) {
-            lista.innerHTML = '';
-        }
-    });
+                resultado.appendChild(li);
+            });
+            resultado.style.display = 'block';
+        });
+});
+
+// Ocultar lista al hacer clic fuera
+document.addEventListener('click', function(e){
+    if(!resultado.contains(e.target) && e.target !== input){
+        resultado.style.display = 'none';
+    }
 });
 </script>
 @endpush

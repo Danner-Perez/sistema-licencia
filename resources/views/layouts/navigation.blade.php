@@ -1,19 +1,17 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
+<nav class="bg-gray-900 text-white">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
 
-        {{-- LOGO / DASHBOARD --}}
-        <a class="navbar-brand" href="{{ route('dashboard') }}">
-            Sistema Licencias
-        </a>
+            {{-- LOGO --}}
+            <div class="flex items-center">
+                <a href="{{ route('dashboard') }}"
+                   class="text-lg font-bold hover:text-gray-300">
+                    Sistema Licencias
+                </a>
+            </div>
 
-        <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#menu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="menu">
-
+            {{-- MENÚ DESKTOP --}}
             @php
-                // Menu por rol
                 $menu = [
                     'admin' => [
                         ['name' => 'Postulantes', 'route' => 'postulantes.index'],
@@ -34,41 +32,83 @@
                 $rolActual = auth()->user()->rol;
             @endphp
 
-            <ul class="navbar-nav me-auto">
+            <div class="hidden md:flex md:items-center md:space-x-6">
                 @foreach($menu[$rolActual] ?? [] as $item)
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->is(str_replace('.index','*',$item['route'])) ? 'active' : '' }}"
-                           href="{{ route($item['route']) }}">
-                            {{ $item['name'] }}
-                        </a>
-                    </li>
+                    <a href="{{ route($item['route']) }}"
+                       class="px-3 py-2 rounded-md text-sm font-medium
+                       {{ request()->is(str_replace('.index','*',$item['route']))
+                           ? 'bg-gray-800 text-white'
+                           : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                        {{ $item['name'] }}
+                    </a>
                 @endforeach
-            </ul>
+            </div>
 
             {{-- USUARIO --}}
-            <ul class="navbar-nav">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                        {{ Auth::user()->name }} 
-                        <span class="badge bg-secondary">{{ $rolActual }}</span>
+            <div class="hidden md:flex items-center" x-data="{ open: false }">
+                <button @click="open = !open"
+                        class="flex items-center gap-2 px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700">
+                    <span>{{ Auth::user()->name }}</span>
+                    <span class="text-xs bg-gray-600 px-2 py-0.5 rounded">
+                        {{ $rolActual }}
+                    </span>
+                </button>
+
+                <div x-show="open"
+                     @click.outside="open = false"
+                     x-transition
+                     class="absolute right-4 top-16 w-40 bg-white text-gray-800 rounded shadow-lg overflow-hidden">
+
+                    <a href="{{ route('profile.edit') }}"
+                       class="block px-4 py-2 hover:bg-gray-100">
+                        Perfil
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                                Perfil
+
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100">
+                            Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {{-- BOTÓN MOBILE --}}
+            <div class="flex items-center md:hidden" x-data="{ open: false }">
+                <button @click="open = !open"
+                        class="text-gray-300 hover:text-white focus:outline-none">
+                    ☰
+                </button>
+
+                <div x-show="open"
+                     @click.outside="open = false"
+                     x-transition
+                     class="absolute top-16 left-0 w-full bg-gray-900 border-t border-gray-700">
+
+                    <div class="px-4 py-3 space-y-2">
+                        @foreach($menu[$rolActual] ?? [] as $item)
+                            <a href="{{ route($item['route']) }}"
+                               class="block px-3 py-2 rounded text-gray-300 hover:bg-gray-700 hover:text-white">
+                                {{ $item['name'] }}
                             </a>
-                        </li>
-                        <li>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button class="dropdown-item text-danger">
-                                    Cerrar sesión
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
+                        @endforeach
+
+                        <hr class="border-gray-700">
+
+                        <a href="{{ route('profile.edit') }}"
+                           class="block px-3 py-2 text-gray-300 hover:bg-gray-700">
+                            Perfil
+                        </a>
+
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button class="w-full text-left px-3 py-2 text-red-400 hover:bg-gray-700">
+                                Cerrar sesión
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>

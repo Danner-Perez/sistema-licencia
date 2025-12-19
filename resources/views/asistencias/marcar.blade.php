@@ -6,7 +6,7 @@
     {{-- TÍTULO --}}
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">
-            📋 Control de Asistencia
+            📋 Control de Asistencia (Hoy)
         </h2>
         <span class="text-sm text-gray-500">
             {{ now()->format('d/m/Y') }}
@@ -32,50 +32,61 @@
     <div class="bg-white rounded-xl shadow overflow-hidden">
         <table class="w-full">
             <thead class="bg-gray-100 text-gray-600 text-sm">
-                <tr>
-                    <th class="p-3 text-left">DNI</th>
-                    <th class="p-3 text-left">Postulante</th>
-                    <th class="p-3 text-left">Licencia</th>
-                    <th class="p-3 text-center">Estado</th>
-                </tr>
+            <tr>
+                <th class="p-3 text-left">DNI</th>
+                <th class="p-3 text-left">Postulante</th>
+                <th class="p-3 text-left">Licencia</th>
+                <th class="p-3 text-center">Hora llegada</th>
+                <th class="p-3 text-center">Acción</th>
+            </tr>
             </thead>
 
+
             <tbody>
-                @forelse($postulantes as $p)
-                <tr id="fila-{{ $p->id_postulante }}" class="border-t hover:bg-gray-50 transition">
-                    <td class="p-3 font-mono text-gray-700">{{ $p->dni }}</td>
+                @foreach($postulantes as $p)
+                    @php
+                        $asistenciaHoy = $p->asistencias->first();
+                    @endphp
 
-                    <td class="p-3">
-                        <div class="font-semibold text-gray-800">
+                    <tr id="fila-{{ $p->id_postulante }}" class="border-t">
+                        <td class="p-3 font-mono">{{ $p->dni }}</td>
+
+                        <td class="p-3">
                             {{ $p->nombres }} {{ $p->apellidos }}
-                        </div>
-                    </td>
+                        </td>
 
-                    <td class="p-3 text-sm text-gray-600">
-                        {{ optional($p->procesoActivo)->tipo_licencia ?? 'N/D' }}
-                    </td>
+                        <td class="p-3 text-sm">
+                            {{ optional($p->procesoActivo)->tipo_licencia ?? 'N/D' }}
+                        </td>
 
-                    <td class="p-3 text-center">
-                        @if(in_array($p->id_postulante, $asistenciasHoy))
-                            <span class="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-full bg-green-100 text-green-700 font-semibold">
-                                ✅ ASISTIÓ
-                            </span>
-                        @else
-                            <button
-                                class="marcar-btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full text-sm transition active:scale-95"
-                                data-id="{{ $p->id_postulante }}">
-                                Marcar
-                            </button>
-                        @endif
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="4" class="text-center p-6 text-gray-500">
-                        No hay postulantes registrados
-                    </td>
-                </tr>
-                @endforelse
+                        {{-- ✅ HORA LLEGADA --}}
+                        <td class="p-3 text-center">
+                            @if($asistenciaHoy)
+                                <span class="text-green-700 font-semibold">
+                                    {{ $asistenciaHoy->hora_llegada->format('H:i:s') }}
+                                </span>
+                            @else
+                                <span class="text-gray-400">--:--</span>
+                            @endif
+                        </td>
+
+                        {{-- ✅ ACCIÓN --}}
+                        <td class="p-3 text-center">
+                            @if($asistenciaHoy)
+                                <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-700 font-semibold">
+                                    ✅ ASISTIÓ
+                                </span>
+                            @else
+                                <button
+                                    class="marcar-btn bg-blue-600 text-white px-4 py-1.5 rounded-full"
+                                    data-id="{{ $p->id_postulante }}">
+                                    Marcar
+                                </button>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+
             </tbody>
         </table>
     </div>
@@ -108,11 +119,18 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
+
                     const fila = document.getElementById('fila-' + postulanteId);
-                    fila.querySelector('td:last-child').innerHTML = `
+
+                    // Hora llegada (4ta columna)
+                    fila.querySelector('td:nth-child(4)').innerText = data.hora_llegada;
+
+                    // Acción (5ta columna)
+                    fila.querySelector('td:nth-child(5)').innerHTML = `
                         <span class="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-full bg-green-100 text-green-700 font-semibold">
                             ✅ ASISTIÓ
                         </span>`;
+
                     showToast(data.message, 'success');
                 } else {
                     btn.disabled = false;

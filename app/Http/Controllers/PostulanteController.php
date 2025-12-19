@@ -38,12 +38,25 @@ class PostulanteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'dni'                => 'required|digits:8|unique:postulantes,dni',
+            'dni'                => 'required|digits:8',
             'nombres'            => 'required|string|max:100',
             'apellidos'          => 'required|string|max:100',
             'fecha_psicosomatico'=> 'required|date',
             'tipo_licencia'      => 'required|in:A1,A2A,A2B,A3',
         ]);
+
+        $hoy = now()->toDateString();
+
+        // ⚠ Verificar si ya hay un postulante con el mismo DNI registrado hoy
+        $existeHoy = Postulante::where('dni', $request->dni)
+                        ->whereDate('created_at', $hoy)
+                        ->exists();
+
+        if ($existeHoy) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['dni' => 'Este postulante ya fue registrado hoy.']);
+        }
 
         // Crear postulante
         $postulante = Postulante::create([
@@ -54,11 +67,11 @@ class PostulanteController extends Controller
             'registrado_por'     => auth()->id(),
         ]);
 
-        // Crear proceso de licencia
+        // Crear proceso de licencia automáticamente
         ProcesoLicencia::create([
             'postulante_id' => $postulante->id_postulante,
             'tipo_licencia' => $request->tipo_licencia,
-            'fecha_inicio'  => Carbon::today(),
+            'fecha_inicio'  => $hoy,
             'estado'        => 'EN_PROCESO',
         ]);
 
@@ -66,6 +79,7 @@ class PostulanteController extends Controller
             ->route('postulantes.index')
             ->with('success', 'Postulante y proceso de licencia registrados correctamente');
     }
+
 
     /**
      * Formulario para editar postulante

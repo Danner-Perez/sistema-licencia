@@ -99,6 +99,9 @@ class ExamenController extends Controller
             'examenes' => fn ($q) => $q->latest(),
             'ultimaVerificacion'
         ])
+        ->whereHas('ultimaVerificacion', function ($q) {
+            $q->whereDate('fecha', Carbon::today());
+        })
         ->where(function ($q) use ($query) {
             $q->where('dni', 'like', "%{$query}%")
             ->orWhere('nombres', 'like', "%{$query}%")
@@ -106,7 +109,7 @@ class ExamenController extends Controller
         })
         ->limit(10)
         ->get();
-
+        
         return response()->json(
             $postulantes->map(function ($p) {
                 return [
@@ -139,9 +142,22 @@ class ExamenController extends Controller
             'resultado'            => 'required|in:APROBADO,NO APROBADO',
         ]);
 
-        // 🔒 Evitar doble registro el mismo día
+        $hoy = Carbon::today();
+
+        // ❌ SI NO TIENE VERIFICACIÓN HOY → BLOQUEAR
+        $tieneVerificacionHoy = \App\Models\Verificacion::where('id_postulante', $request->id_postulante)
+            ->whereDate('fecha', $hoy)
+            ->exists();
+
+        if (! $tieneVerificacionHoy) {
+            return back()->withErrors([
+                'id_postulante' => 'El postulante debe pasar verificación antes del examen.'
+            ]);
+        }
+
+        // ❌ SI YA RINDIÓ HOY → BLOQUEAR
         $yaRindioHoy = Examen::where('id_postulante', $request->id_postulante)
-            ->whereDate('fecha', Carbon::today())
+            ->whereDate('fecha', $hoy)
             ->exists();
 
         if ($yaRindioHoy) {
@@ -150,6 +166,7 @@ class ExamenController extends Controller
             ]);
         }
 
+        // ✅ REGISTRAR EXAMEN
         Examen::create([
             'id_postulante' => $request->id_postulante,
             'fecha'         => now(),
@@ -160,4 +177,36 @@ class ExamenController extends Controller
             ->route('examenes.index')
             ->with('success', 'Resultado del examen registrado correctamente.');
     }
+    public function edit(Examen $examen)
+    {
+        // 🔒 SOLO SI ES APROBADO O NO APROBADO
+        if (!in_array($examen->resultado, ['APROBADO', 'NO APROBADO'])) {
+            abort(403, 'Este examen no puede ser editado');
+        }
+
+        return view('examenes.edit', compact('examen'));
+    }
+    public function update(Request $request, Examen $examen)
+    {
+        if (!in_array($examen->resultado, ['APROBADO', 'NO APROBADO'])) {
+            abort(403, 'Este examen no puede ser editado');
+        }
+
+        $request->validate([
+            'resultado' => 'required|in:APROBADO,NO APROBADO',
+            'observacion' => 'nullable|string|max:255',
+        ]);
+
+        $examen->update([
+            'resultado'   => $request->resultado,
+            'observacion' => $request->observacion,
+        ]);
+
+        return redirect()
+            ->route('examenes.index')
+            ->with('success', 'Examen actualizado correctamente.');
+    }
+
+
+
 }

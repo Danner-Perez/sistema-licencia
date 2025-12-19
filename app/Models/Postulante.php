@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use App\Models\Verificacion;
-
+use App\Models\Asistencia;
 class Postulante extends Model
 {
     protected $table = 'postulantes';
@@ -78,6 +78,15 @@ class Postulante extends Model
             'id_postulante'
         );
     }
+    public function asistencias()
+    {
+        return $this->hasMany(
+            \App\Models\Asistencia::class,
+            'postulante_id',
+            'id_postulante'
+        );
+    }
+
 
     /* ==============================
        PSICOSOMÁTICO (REGLA DE NEGOCIO)
@@ -112,6 +121,7 @@ class Postulante extends Model
             false
         );
     }
+    
 
     // Accessor opcional (si lo usas en vistas)
     public function getProcesoActivoAttribute()

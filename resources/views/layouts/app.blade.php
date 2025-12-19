@@ -1,50 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <title>{{ config('app.name', 'Sistema de Licencias') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    {{-- Bootstrap --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    {{-- VITE (Tailwind + JS) --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Opcional: iconos --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
-    
 </head>
 
-<body class="bg-light">
+<body class="bg-gray-100 text-gray-800 min-h-screen">
 
-    {{-- Navegación --}}
+    {{-- NAVEGACIÓN --}}
     @include('layouts.navigation')
 
-    {{-- Contenido --}}
-    <main class="container py-4">
+    {{-- CONTENIDO --}}
+    <main class="max-w-7xl mx-auto px-4 py-6">
 
-        {{-- Mensajes --}}
+        {{-- MENSAJES --}}
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show">
-                {{ session('success') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="mb-4 rounded-lg bg-green-100 border border-green-300 text-green-800 px-4 py-3">
+                ✅ {{ session('success') }}
             </div>
         @endif
 
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show">
-                {{ session('error') }}
-                <button class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="mb-4 rounded-lg bg-red-100 border border-red-300 text-red-800 px-4 py-3">
+                ❌ {{ session('error') }}
             </div>
         @endif
 
         @yield('content')
     </main>
 
-    {{-- Bootstrap JS --}}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     @stack('scripts')
 
 </body>

@@ -5,12 +5,13 @@
     <title>{{ config('app.name', 'Sistema de Licencias') }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    {{-- Bootstrap --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    {{-- Vite --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center" style="min-height:100vh;">
 
-    <div class="card shadow-sm p-4" style="min-width:380px;">
+<body class="min-h-screen bg-gray-100 flex items-center justify-center">
+
+    <div class="w-full max-w-md bg-white shadow-lg rounded-xl p-8">
         {{ $slot }}
     </div>
 

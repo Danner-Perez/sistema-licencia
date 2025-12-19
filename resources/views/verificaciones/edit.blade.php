@@ -1,78 +1,73 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h2>Editar Verificación</h2>
+<div class="max-w-4xl mx-auto">
 
-    <form action="{{ route('verificaciones.update', $verificacion) }}" method="POST">
+    {{-- CABECERA --}}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold">Registrar Verificación</h2>
+        <a href="{{ route('verificaciones.index') }}"
+           class="px-4 py-2 rounded-lg border hover:bg-gray-100">
+            ⬅ Volver
+        </a>
+    </div>
+
+    {{-- ERRORES --}}
+    @if ($errors->any())
+        <div class="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded">
+            <ul class="list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('verificaciones.store') }}" method="POST"
+          class="bg-white shadow rounded-lg p-6 space-y-5">
         @csrf
-        @method('PUT')
 
-        {{-- BUSCADOR DINÁMICO POR DNI / NOMBRE --}}
-        <label>Postulante</label>
-        <input type="text" id="buscar-postulante" class="form-control mb-2"
-               placeholder="Escribe DNI o nombre..."
-               value="{{ $verificacion->postulante->dni }} - {{ $verificacion->postulante->nombres }} {{ $verificacion->postulante->apellidos }}">
-        <input type="hidden" name="id_postulante" id="id_postulante" value="{{ $verificacion->id_postulante }}">
+        {{-- BUSCADOR POSTULANTE --}}
+        <div class="relative">
+            <label class="block text-sm font-medium mb-1">
+                Buscar Postulante (DNI / nombres)
+            </label>
 
-        <ul id="resultado-postulante" class="list-group mb-3" style="position: absolute; z-index: 1000; width: 50%; display: none;"></ul>
+            <input type="text"
+                   id="buscar-postulante"
+                   class="w-full border rounded-lg px-3 py-2"
+                   placeholder="Escriba al menos 3 caracteres"
+                   autocomplete="off">
 
-        <label>Placa</label>
-        <input type="text" name="placa" class="form-control mb-3" value="{{ $verificacion->placa }}" required>
+            <input type="hidden" name="id_postulante" id="postulante-id">
 
-        <button class="btn btn-warning">Actualizar</button>
+            <div id="lista-postulantes"
+                 class="absolute z-10 w-full bg-white border rounded-lg mt-1 hidden">
+            </div>
+
+            <p id="error-busqueda" class="text-sm text-red-600 mt-1"></p>
+        </div>
+
+        {{-- PLACA --}}
+        <div>
+            <label class="block text-sm font-medium mb-1">Placa</label>
+            <input type="text"
+                   name="placa"
+                   class="w-full border rounded-lg px-3 py-2"
+                   required>
+        </div>
+
+        {{-- BOTONES --}}
+        <div class="flex justify-end gap-3">
+            <a href="{{ route('verificaciones.index') }}"
+               class="px-4 py-2 rounded-lg border hover:bg-gray-100">
+                Cancelar
+            </a>
+            <button class="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                💾 Guardar Verificación
+            </button>
+        </div>
+
     </form>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-const input = document.getElementById('buscar-postulante');
-const selectId = document.getElementById('id_postulante');
-const resultado = document.getElementById('resultado-postulante');
-
-input.addEventListener('input', function() {
-    const query = this.value;
-
-    if(query.length < 2) { 
-        resultado.style.display = 'none';
-        return;
-    }
-
-    fetch("{{ route('verificaciones.buscarPostulante') }}?query=" + query)
-        .then(response => response.json())
-        .then(data => {
-            resultado.innerHTML = '';
-            if(data.length === 0){
-                resultado.style.display = 'none';
-                return;
-            }
-
-            data.forEach(postulante => {
-                const li = document.createElement('li');
-                li.classList.add('list-group-item', 'list-group-item-action');
-                li.textContent = `${postulante.dni} - ${postulante.nombres} ${postulante.apellidos}`;
-                li.dataset.id = postulante.id_postulante;
-                li.style.cursor = 'pointer';
-
-                li.addEventListener('click', function() {
-                    input.value = this.textContent;
-                    selectId.value = this.dataset.id;
-                    resultado.innerHTML = '';
-                    resultado.style.display = 'none';
-                });
-
-                resultado.appendChild(li);
-            });
-            resultado.style.display = 'block';
-        });
-});
-
-// Ocultar lista al hacer clic fuera
-document.addEventListener('click', function(e){
-    if(!resultado.contains(e.target) && e.target !== input){
-        resultado.style.display = 'none';
-    }
-});
-</script>
-@endpush
