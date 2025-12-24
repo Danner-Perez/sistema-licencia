@@ -14,25 +14,47 @@ class ExamenController extends Controller
      * Vista principal de exámenes
      * Lista todos los postulantes con su último resultado
      */
-    public function index()
+    public function index(Request $request)
     {
-        $postulantes = Postulante::whereHas('examenes', function ($q) {
-                $q->whereIn('resultado', ['APROBADO', 'NO APROBADO']);
+        $fecha = $request->filled('fecha')
+            ? Carbon::parse($request->fecha)->toDateString()
+            : Carbon::today()->toDateString();
+
+        $query = Postulante::whereHas('examenes', function ($q) use ($fecha) {
+                $q->whereDate('fecha', $fecha)
+                ->whereIn('resultado', ['APROBADO', 'NO APROBADO']);
             })
             ->with([
-                'examenes' => function ($q) {
-                    $q->latest()->limit(1);
+                'examenes' => function ($q) use ($fecha) {
+                    $q->whereDate('fecha', $fecha)
+                    ->latest()
+                    ->limit(1);
                 },
                 'procesoActivo',
-                'verificaciones' => function ($q) {
-                    $q->latest()->limit(1);
+                'verificaciones' => function ($q) use ($fecha) {
+                    $q->whereDate('fecha', $fecha)
+                    ->latest()
+                    ->limit(1);
                 }
             ])
-            ->orderBy('apellidos')
-            ->get();
+            ->orderBy('apellidos');
 
-        return view('examenes.index', compact('postulantes'));
+        // 🔢 CONTADOR
+        $totalExamenes = (clone $query)->count();
+
+        // 📄 PAGINACIÓN
+        $postulantes = $query
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('examenes.index', compact(
+            'postulantes',
+            'fecha',
+            'totalExamenes'
+        ));
     }
+
+
     public function buscar(Request $request)
     {
         $request->validate([

@@ -6,8 +6,28 @@
     {{-- CABECERA --}}
     <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
         <h2 class="text-xl font-bold text-gray-800">
-            📋 Exámenes del día
+            📋 Exámenes del {{ \Carbon\Carbon::parse($fecha)->format('d/m/Y') }}
         </h2>
+
+        <form method="GET" action="{{ route('examenes.index') }}" class="mb-4 flex flex-wrap gap-2 items-center">
+            <input
+                type="date"
+                name="fecha"
+                value="{{ request('fecha', $fecha ?? now()->toDateString()) }}"
+                class="border rounded px-3 py-2 focus:ring focus:ring-blue-300"
+            >
+
+            <button
+                type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            >
+                Filtrar
+            </button>
+
+            <a href="{{ route('examenes.index') }}" class="text-sm text-gray-600 underline">
+                Hoy
+            </a>
+        </form>
 
         <div class="flex gap-2">
             <a href="{{ route('examenes.create') }}"
@@ -50,10 +70,13 @@
                 @php
                     $examen = $p->examenes->first();
                     $verificacion = $p->verificaciones->first();
+
+                    // 🔢 CONTADOR GLOBAL
+                    $contador = $postulantes->firstItem() + $i;
                 @endphp
 
                 <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-2">{{ $i + 1 }}</td>
+                    <td class="px-4 py-2">{{ $contador }}</td>
                     <td class="px-4 py-2">{{ $p->dni }}</td>
                     <td class="px-4 py-2">{{ $p->nombres }} {{ $p->apellidos }}</td>
 
@@ -105,6 +128,11 @@
             @endforelse
             </tbody>
         </table>
+    </div>
+
+    {{-- PAGINACIÓN --}}
+    <div class="mt-6">
+        {{ $postulantes->appends(request()->query())->links() }}
     </div>
 
 </div>

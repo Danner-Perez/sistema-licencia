@@ -43,10 +43,7 @@
                     Acceder al sistema
                 </button>
 
-                <a href="#features"
-                   class="px-6 py-3 border border-gray-700 rounded-lg hover:bg-gray-800 transition">
-                    Ver características
-                </a>
+               
             </div>
         </div>
 
@@ -64,26 +61,7 @@
     {{-- FEATURES --}}
     <section id="features" class="bg-gray-900 py-16">
         <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-8">
-            <div class="bg-gray-800 p-6 rounded-xl">
-                <h3 class="font-bold text-lg mb-2">Gestión centralizada</h3>
-                <p class="text-gray-400 text-sm">
-                    Control total de usuarios, roles y procesos.
-                </p>
-            </div>
-
-            <div class="bg-gray-800 p-6 rounded-xl">
-                <h3 class="font-bold text-lg mb-2">Seguridad por roles</h3>
-                <p class="text-gray-400 text-sm">
-                    Accesos diferenciados para administradores y examinadores.
-                </p>
-            </div>
-
-            <div class="bg-gray-800 p-6 rounded-xl">
-                <h3 class="font-bold text-lg mb-2">Rápido y eficiente</h3>
-                <p class="text-gray-400 text-sm">
-                    Flujo optimizado con UX moderna y responsiva.
-                </p>
-            </div>
+            
         </div>
     </section>
 
@@ -156,10 +134,7 @@
 
             @if (Route::has('password.request'))
                 <div class="text-center">
-                    <a href="{{ route('password.request') }}"
-                       class="text-sm text-blue-400 hover:text-blue-300 hover:underline">
-                        ¿Olvidaste tu contraseña?
-                    </a>
+                    
                 </div>
             @endif
         </form>

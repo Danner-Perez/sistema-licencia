@@ -22,10 +22,30 @@
         <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">📋 Postulantes Verificados</h2>
 
         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-            <form method="GET" action="{{ route('verificaciones.index') }}" class="flex gap-2 w-full md:w-auto">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar DNI o nombre" class="px-4 py-2 border rounded w-full md:w-64 focus:ring focus:ring-blue-300">
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Buscar</button>
-            </form>
+            <form method="GET" action="{{ route('verificaciones.index') }}" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+
+            <input
+                type="date"
+                name="fecha"
+                value="{{ request('fecha', now()->toDateString()) }}"
+                class="px-3 py-2 border rounded focus:ring focus:ring-blue-300"
+            >
+
+            <input
+                type="text"
+                name="search"
+                value="{{ request('search') }}"
+                placeholder="Buscar DNI o nombre"
+                class="px-4 py-2 border rounded w-full md:w-64 focus:ring focus:ring-blue-300"
+            >
+
+            <button type="submit"
+                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Filtrar
+            </button>
+
+        </form>
+
             <a href="{{ route('verificaciones.create') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 whitespace-nowrap">➕ Nueva Verificación</a>
         </div>
     </div>
@@ -48,7 +68,10 @@
                     <x-verificacion-row :verificacion="$v" :index="$i" />
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-6 text-gray-500">No hay postulantes verificados</td>
+                       <td colspan="6" class="text-center py-6 text-gray-500">
+                            No hay verificaciones registradas para la fecha seleccionada
+                        </td>
+
                     </tr>
                 @endforelse
             </tbody>

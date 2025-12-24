@@ -10,15 +10,19 @@ class VerificacionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Verificacion::with(['postulante.procesoActivo','verificador'])
-            ->orderBy('fecha','desc');
+        $hoy = now()->toDateString();
 
+        $query = Verificacion::with(['postulante.procesoActivo','verificador'])
+            ->whereDate('fecha', $request->filled('fecha') ? $request->fecha : $hoy)
+            ->orderBy('fecha', 'desc');
+
+        // 🔍 Buscar por DNI o nombre
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('postulante', function($q) use ($search) {
-                $q->where('dni','like',"%{$search}%")
-                ->orWhere('nombres','like',"%{$search}%")
-                ->orWhere('apellidos','like',"%{$search}%");
+            $query->whereHas('postulante', function ($q) use ($search) {
+                $q->where('dni', 'like', "%{$search}%")
+                ->orWhere('nombres', 'like', "%{$search}%")
+                ->orWhere('apellidos', 'like', "%{$search}%");
             });
         }
 
@@ -26,6 +30,7 @@ class VerificacionController extends Controller
 
         return view('verificaciones.index', compact('verificaciones'));
     }
+
 
 
     public function create()

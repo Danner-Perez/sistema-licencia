@@ -12,72 +12,52 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class ExamenesHoyExport implements FromCollection, WithHeadings, WithEvents
+class ExamenesHoyExport implements FromCollection, WithEvents
 {
     public function collection()
     {
-        $hoy = Carbon::today();
+        $inicio = Carbon::today()->startOfDay();
+        $fin    = Carbon::today()->endOfDay();
 
         return Examen::with(['postulante', 'postulante.procesoActivo'])
-            ->whereDate('fecha', $hoy)
+            ->whereBetween('fecha', [$inicio, $fin])
+            ->orderBy('fecha')
             ->get()
-            ->values() // 🔴 CLAVE: reinicia índices (N° empieza en 1)
+            ->values()
             ->map(function ($examen, $key) {
 
                 $postulante = $examen->postulante;
 
-                // Apellidos
-                $apellidos = explode(' ', $postulante->apellidos ?? '', 2);
-                $primerApellido  = $apellidos[0] ?? '';
-                $segundoApellido = $apellidos[1] ?? '';
-
-                // Proceso activo
-                $proceso = $postulante->procesoActivo;
-
-                // Clase fija
-                $clase = 'A';
-
-                // Categoría (A-IIb → IIB)
-                $categoria = '';
-                if ($proceso && $proceso->tipo_licencia) {
-                    $categoria = strtoupper($proceso->tipo_licencia);
-                    if (str_starts_with($categoria, 'A-')) {
-                        $categoria = substr($categoria, 2);
-                    }
+                if (!$postulante) {
+                    return null;
                 }
 
-                // Trámite
-                $tramite = $proceso->tipo_tramite ?? '';
-
-                // Fecha inicial
-                $fInicial = $postulante->fecha_psicosomatico
-                    ? Carbon::parse($postulante->fecha_psicosomatico)->format('d/m/Y')
-                    : '';
-
-                // Días restantes
-                $diasParaVencer = $postulante->diasRestantesPsicosomatico();
+                $apellidos = explode(' ', $postulante->apellidos ?? '', 2);
 
                 return [
-                    $key + 1, // ✅ Numeración correcta
-                    $primerApellido,
-                    $segundoApellido,
+                    $key + 1, // ✅ ahora SIEMPRE correcto
+                    $apellidos[0] ?? '',
+                    $apellidos[1] ?? '',
                     $postulante->nombres ?? '',
                     $postulante->dni,
-                    $clase,
-                    $categoria,
-                    $tramite,
-                    $fInicial,
-                    $diasParaVencer,
+                    'A',
+                    optional($postulante->procesoActivo)->tipo_licencia
+                        ? str_replace('A-', '', strtoupper($postulante->procesoActivo->tipo_licencia))
+                        : '',
+                    optional($postulante->procesoActivo)->tipo_tramite ?? '',
+                    $postulante->fecha_psicosomatico
+                        ? Carbon::parse($postulante->fecha_psicosomatico)->format('d/m/Y')
+                        : '',
+                    $postulante->diasRestantesPsicosomatico(),
                     $examen->resultado,
                 ];
-            });
+            })
+            ->filter()
+            ->values();
     }
 
-    public function headings(): array
-    {
-        // No se usan (se crean manualmente)
-        return [];
-    }
+
+    
 
     public function registerEvents(): array
     {
