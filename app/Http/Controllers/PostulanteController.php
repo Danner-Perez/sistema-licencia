@@ -41,6 +41,7 @@ class PostulanteController extends Controller
      */
      public function store(Request $request, ReniecService $reniec)
     {
+        $reniecCaido = false;
         
 
         $request->validate([
@@ -66,12 +67,14 @@ class PostulanteController extends Controller
 
         // Consultar API si no vienen nombres/apellidos
         if (empty($request->nombres) || empty($request->apellidos)) {
-        $apiData = $reniec->consultarDni($request->dni);
+            $apiData = $reniec->consultarDni($request->dni);
 
-        if ($apiData) {
-            $request->merge($apiData);
+            if ($apiData) {
+                $request->merge($apiData);
+            } else {
+                $reniecCaido = true;
+            }
         }
-    }
 
         $postulante = Postulante::create([
             'dni'                 => $request->dni,
@@ -92,8 +95,15 @@ class PostulanteController extends Controller
         ]);
 
         return redirect()
-            ->route('postulantes.index')
-            ->with('success', 'Postulante y proceso de licencia registrados correctamente');
+        ->route('postulantes.index')
+        ->with('success', 'Postulante y proceso de licencia registrados correctamente')
+        ->with(
+            'warning',
+            $reniecCaido
+                ? 'RENIEC no respondió. Los datos fueron ingresados manualmente.'
+                : null
+        );
+
     }
 
 
