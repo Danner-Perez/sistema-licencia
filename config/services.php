@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'reniec' => [
+        'token' => env('RENIEC_API_TOKEN'),
+    ],
+
 
 ];

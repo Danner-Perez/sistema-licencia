@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Services\ReniecService;
 
 use App\Models\Postulante;
 use App\Models\ProcesoLicencia;
@@ -12,46 +13,7 @@ class PostulanteController extends Controller
     /**
      * Listar postulantes registrados hoy
      */
-    private $apiToken = 'apis-token-8574.bPsef4wHOYjVwA7bFoDMZqLLrNrAMKiY';
     
-    private function consultarDni($dni)
-    {
-        $curl = curl_init();
-        curl_setopt_array($curl, [
-            CURLOPT_URL => 'https://api.apis.net.pe/v2/reniec/dni?numero=' . $dni,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 2,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => [
-                'Referer: https://apis.net.pe/consulta-dni-api',
-                'Authorization: Bearer ' . $this->apiToken,
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-        curl_close($curl);
-
-        if ($err) {
-            return null;
-        }
-
-        $data = json_decode($response, true);
-
-        // Retorna nombres y apellidos si existen
-        if (isset($data['nombres']) && isset($data['apellidoPaterno']) && isset($data['apellidoMaterno'])) {
-            return [
-                'nombres' => $data['nombres'],
-                'apellidos' => $data['apellidoPaterno'] . ' ' . $data['apellidoMaterno'],
-            ];
-        }
-
-        return null;
-    }
-
 
 
     public function index(Request $request)
@@ -77,8 +39,10 @@ class PostulanteController extends Controller
     /**
      * Guardar nuevo postulante y proceso de licencia automáticamente
      */
-     public function store(Request $request)
+     public function store(Request $request, ReniecService $reniec)
     {
+        
+
         $request->validate([
             'dni'                 => 'required|digits:8',
             'nombres'             => 'nullable|string|max:100',
@@ -102,11 +66,12 @@ class PostulanteController extends Controller
 
         // Consultar API si no vienen nombres/apellidos
         if (empty($request->nombres) || empty($request->apellidos)) {
-            $apiData = $this->consultarDni($request->dni);
-            if ($apiData) {
-                $request->merge($apiData); // Sobrescribe nombres/apellidos con los de la API
-            }
+        $apiData = $reniec->consultarDni($request->dni);
+
+        if ($apiData) {
+            $request->merge($apiData);
         }
+    }
 
         $postulante = Postulante::create([
             'dni'                 => $request->dni,
@@ -174,13 +139,13 @@ class PostulanteController extends Controller
             ->route('postulantes.index')
             ->with('success', 'Postulante actualizado correctamente');
     }
-    public function buscarPorDni(Request $request)
+    public function buscarPorDni(Request $request, ReniecService $reniec)
     {
         $request->validate([
             'dni' => 'required|digits:8',
         ]);
 
-        $apiData = $this->consultarDni($request->dni);
+        $apiData = $reniec->consultarDni($request->dni);
 
         if (!$apiData) {
             return response()->json(['error' => 'No se encontró el DNI'], 404);
@@ -188,6 +153,7 @@ class PostulanteController extends Controller
 
         return response()->json($apiData);
     }
+
 
 
 

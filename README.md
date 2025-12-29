@@ -1,84 +1,132 @@
 # 🚀 Sistema Web – Laravel
 
-Sistema web desarrollado con **Laravel**, enfocado en una arquitectura limpia, buena experiencia de usuario (UX) y prácticas profesionales de ingeniería de software.
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-FB503B?style=for-the-badge&logo=laravel&logoColor=white&labelColor=101010)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white&labelColor=101010)](https://www.php.net/)
+[![MySQL](https://img.shields.io/badge/MySQL-5.7+-4479A1?style=for-the-badge&logo=mysql&logoColor=white&labelColor=101010)](https://www.mysql.com/)
 
----
+[![HTML](https://img.shields.io/badge/HTML5-orange?style=for-the-badge&logo=html5&logoColor=white&labelColor=101010)](https://developer.mozilla.org/es/docs/Web/HTML)
+[![CSS](https://img.shields.io/badge/CSS3-blue?style=for-the-badge&logo=css3&logoColor=white&labelColor=101010)](https://developer.mozilla.org/es/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-yellow?style=for-the-badge&logo=javascript&logoColor=white&labelColor=101010)](https://developer.mozilla.org/es/docs/Web/JavaScript)
 
-## 📌 Descripción General
+## 📌 Descripción
 
-Este proyecto es un sistema web moderno desarrollado para la gestión de información y procesos administrativos, implementando estándares actuales de desarrollo backend y frontend.
-
-El sistema está diseñado para ser:
-- Escalable
-- Seguro
-- Fácil de mantener
-- Amigable para el usuario final
+Este proyecto es un sistema web administrativo desarrollado con Laravel.
+Incluye:
+- Gestión de usuarios y roles
+- Módulos administrativos
+- Exportación de datos a Excel
+- Diseño responsive y limpio
 
 ---
 
 ## 🧰 Tecnologías Utilizadas
 
-### 🔹 Backend
-- **PHP 8.x**
-- **Laravel 11 / 12**
-- Arquitectura MVC
-- Eloquent ORM
+### Backend
+- PHP 8.2+
+- Laravel 12
 - Migrations & Seeders
-- Validaciones y Middleware
-- API REST (cuando aplica)
 
-### 🔹 Frontend
-- **Blade Templates**
-- **JavaScript (ES6+)**
-- **HTML5**
-- **CSS3**
-- **Tailwind CSS**
-- **Alpine.js** (si aplica)
-- Diseño responsive (Mobile First)
+### Frontend
+- Blade Templates
+- JavaScript 
+- HTML5 / CSS3
+- Alpine.js 
 
-### 🔹 Base de Datos
-- **MySQL / MariaDB**
-- Relaciones normalizadas
-- Índices y claves foráneas
+### Exportación de Datos
+- **Maatwebsite/Laravel-Excel**
+- **PhpOffice/PhpSpreadsheet**
 
-### 🔹 Otras Herramientas
+### Herramientas
 - Composer
 - NPM / Vite
 - Git & GitHub
-- Laravel Excel (exportaciones)
-- APIs externas (ej. RENIEC, si aplica)
+
+## 📋 Requisitos del Sistema
+
+Antes de instalar, asegúrate de tener instalado:
+
+- PHP >= 8.2
+- Composer
+- Node.js >= 18
+
+
+Extensiones PHP requeridas:
+- OpenSSL
+- PDO
+- Mbstring
+- Tokenizer
+- XML
+- Fileinfo
 
 ---
 
-## 🎨 UX / UI (Experiencia de Usuario)
 
-El sistema fue diseñado considerando:
-- Navegación clara y simple
-- Formularios accesibles y validados
-- Mensajes de error y éxito comprensibles
-- Diseño limpio y profesional
-- Soporte para modo claro / oscuro (si aplica)
+
+## ⚙️ Instalación
+
+### 1️⃣ Clonar el repositorio
+```bash
+git clone https://github.com/tu-usuario/tu-repositorio.git
+cd tu-repositorio
+````
 
 ---
 
-## 📂 Estructura del Proyecto
+### 2️⃣ Instalar dependencias
 
-```txt
-app/
-├── Http/
-│   ├── Controllers/
-│   ├── Requests/
-│   └── Middleware/
-├── Models/
-resources/
-├── views/
-│   ├── layouts/
-│   ├── components/
-│   └── pages/
-routes/
-├── web.php
-├── api.php
-database/
-├── migrations/
-├── seeders/
-public/
+```bash
+composer install
+npm install
+npm run build
+```
+
+
+
+---
+
+### 3️⃣ Configurar archivo de entorno
+
+Copiar el archivo de ejemplo y generar la clave de la aplicación:
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+> ⚠️ La configuración de base de datos se define localmente en el archivo `.env`.
+
+---
+
+### 4️⃣ Ejecutar migraciones y seeders
+
+```bash
+php artisan migrate --seed
+```
+
+---
+
+### 5️⃣ Iniciar el servidor
+
+```bash
+php artisan serve
+```
+
+Acceder desde el navegador:
+
+```
+http://localhost:8000
+```
+
+---
+
+### 👤 Usuario Administrador Inicial
+
+```
+Email: admin@sistema.com
+Password: admin123
+```
+
+> ⚠️ Cambiar credenciales 
+
+```
+
