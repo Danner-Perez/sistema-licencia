@@ -14,26 +14,24 @@ class ReniecService
         $this->token = config('services.reniec.token');
     }
 
-    public function consultarDni(string $dni): ?array
+    public function consultarDni(string $dni): array
     {
         try {
             $response = Http::withHeaders([
                 'Referer' => 'https://apis.net.pe/consulta-dni-api',
                 'Authorization' => 'Bearer ' . $this->token,
             ])
-            ->timeout(5)              // ⏱ evita cuelgues
-            ->retry(2, 300)           // 🔁 reintenta 2 veces
+            ->timeout(5)
+            ->retry(2, 300)
             ->get('https://api.apis.net.pe/v2/reniec/dni', [
                 'numero' => $dni
             ]);
 
             if (!$response->successful()) {
-                Log::warning('RENIEC error HTTP', [
-                    'dni' => $dni,
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                return null;
+                return [
+                    'status' => 'RENIEC_ERROR',
+                    'data'   => null,
+                ];
             }
 
             $data = $response->json();
@@ -44,21 +42,42 @@ class ReniecService
                       $data['apellidoMaterno'])
             ) {
                 return [
-                    'nombres'   => $data['nombres'],
-                    'apellidos' => $data['apellidoPaterno'] . ' ' . $data['apellidoMaterno'],
+                    'status' => 'OK',
+                    'data'   => [
+                        'nombres'   => $data['nombres'],
+                        'apellidos' => $data['apellidoPaterno'].' '.$data['apellidoMaterno'],
+                    ],
                 ];
             }
 
-            return null;
+            return [
+                'status' => 'NOT_FOUND',
+                'data'   => null,
+            ];
 
-        } catch (\Throwable $e) {
-            // 💥 Error grave: timeout, DNS, SSL, etc.
-            Log::error('RENIEC caído', [
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            // 🌐 SIN INTERNET
+            Log::error('Sin conexión a internet', [
                 'dni' => $dni,
                 'error' => $e->getMessage(),
             ]);
 
-            return null;
+            return [
+                'status' => 'NO_INTERNET',
+                'data'   => null,
+            ];
+
+        } catch (\Throwable $e) {
+            // 💥 Error desconocido
+            Log::error('Error RENIEC', [
+                'dni' => $dni,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'status' => 'ERROR',
+                'data'   => null,
+            ];
         }
     }
 }

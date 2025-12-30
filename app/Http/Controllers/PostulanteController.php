@@ -41,8 +41,7 @@ class PostulanteController extends Controller
      */
      public function store(Request $request, ReniecService $reniec)
     {
-        $reniecCaido = false;
-        
+        $mensajeWarning = null;
 
         $request->validate([
             'dni'                 => 'required|digits:8',
@@ -61,21 +60,31 @@ class PostulanteController extends Controller
         if ($existeHoy) {
             return back()
                 ->withInput()
-                ->withErrors(['dni' => 'Este postulante ya fue registrado hoy.'])
+                ->withErrors([
+                    'dni' => 'Este postulante ya fue registrado hoy.'
+                ])
                 ->with('openCreateModal', true);
         }
 
-        // Consultar API si no vienen nombres/apellidos
+        // 🔍 CONSULTA RENIEC (CON DETECCIÓN DE INTERNET)
         if (empty($request->nombres) || empty($request->apellidos)) {
-            $apiData = $reniec->consultarDni($request->dni);
 
-            if ($apiData) {
-                $request->merge($apiData);
-            } else {
-                $reniecCaido = true;
+            $resultado = $reniec->consultarDni($request->dni);
+
+            if ($resultado['status'] === 'OK') {
+                $request->merge($resultado['data']);
+            }
+
+            if ($resultado['status'] === 'NO_INTERNET') {
+                $mensajeWarning = 'No hay conexión a internet. Los datos fueron ingresados manualmente.';
+            }
+
+            if ($resultado['status'] === 'RENIEC_ERROR') {
+                $mensajeWarning = 'RENIEC no respondió. Los datos fueron ingresados manualmente.';
             }
         }
 
+        // 💾 CREAR POSTULANTE
         $postulante = Postulante::create([
             'dni'                 => $request->dni,
             'nombres'             => $request->nombres,
@@ -84,8 +93,12 @@ class PostulanteController extends Controller
             'registrado_por'      => auth()->id(),
         ]);
 
-        $tipoTramite = $request->tipo_licencia === 'A-I' ? 'OBTENCIÓN' : 'RECATEGORIZACIÓN';
+        // 📄 TIPO DE TRÁMITE
+        $tipoTramite = $request->tipo_licencia === 'A-I'
+            ? 'OBTENCIÓN'
+            : 'RECATEGORIZACIÓN';
 
+        // 📝 PROCESO LICENCIA
         ProcesoLicencia::create([
             'postulante_id' => $postulante->id_postulante,
             'tipo_licencia' => $request->tipo_licencia,
@@ -95,16 +108,11 @@ class PostulanteController extends Controller
         ]);
 
         return redirect()
-        ->route('postulantes.index')
-        ->with('success', 'Postulante y proceso de licencia registrados correctamente')
-        ->with(
-            'warning',
-            $reniecCaido
-                ? 'RENIEC no respondió. Los datos fueron ingresados manualmente.'
-                : null
-        );
-
+            ->route('postulantes.index')
+            ->with('success', 'Postulante y proceso de licencia registrados correctamente')
+            ->with('warning', $mensajeWarning);
     }
+
 
 
 

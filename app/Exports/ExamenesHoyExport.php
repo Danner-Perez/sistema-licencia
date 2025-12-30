@@ -26,34 +26,28 @@ class ExamenesHoyExport implements FromCollection, WithEvents
             ->values()
             ->map(function ($examen, $key) {
 
-                $postulante = $examen->postulante;
-
-                if (!$postulante) {
-                    return null;
-                }
-
-                $apellidos = explode(' ', $postulante->apellidos ?? '', 2);
+                $postulante = $examen->postulante ?? null;
 
                 return [
-                    $key + 1, // ✅ ahora SIEMPRE correcto
-                    $apellidos[0] ?? '',
-                    $apellidos[1] ?? '',
+                    $key + 1,
+                    $postulante ? explode(' ', $postulante->apellidos ?? '', 2)[0] : '',
+                    $postulante ? explode(' ', $postulante->apellidos ?? '', 2)[1] : '',
                     $postulante->nombres ?? '',
-                    $postulante->dni,
+                    $postulante->dni ?? '',
                     'A',
-                    optional($postulante->procesoActivo)->tipo_licencia
+                    $postulante && optional($postulante->procesoActivo)->tipo_licencia
                         ? str_replace('A-', '', strtoupper($postulante->procesoActivo->tipo_licencia))
                         : '',
-                    optional($postulante->procesoActivo)->tipo_tramite ?? '',
+                    $postulante->procesoActivo->tipo_tramite ?? '',
                     $postulante->fecha_psicosomatico
                         ? Carbon::parse($postulante->fecha_psicosomatico)->format('d/m/Y')
                         : '',
-                    $postulante->diasRestantesPsicosomatico(),
-                    $examen->resultado,
+                    $postulante ? $postulante->diasRestantesPsicosomatico() : '',
+                    $examen->resultado ?? '',
                 ];
             })
-            ->filter()
-            ->values();
+            ->values(); 
+
     }
 
 
@@ -67,11 +61,11 @@ class ExamenesHoyExport implements FromCollection, WithEvents
                 $sheet = $event->sheet->getDelegate();
 
                 /** ───────── TITULOS ───────── */
-                $sheet->insertNewRowBefore(1, 2);
+                $sheet->insertNewRowBefore(1, 4);
 
                 $sheet->mergeCells('A1:K1');
                 $sheet->setCellValue('A1', 'RELACION DE POSTULANTES PARA EL EXAMEN DE MANEJO PRACTICO (HABILIDADES)');
-                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(17)->setName('Arial Black');
+                $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16)->setName('Arial Black');
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $sheet->mergeCells('A2:K2');
